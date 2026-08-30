@@ -134,25 +134,36 @@ class Asyncify {
 			return newExport;
 		}
 
-		newExport = async (...args: unknown[]) => {
+		newExport = (...args: unknown[]) => {
 			this.assertNoneState();
-			let result = fn(...args);
-
-			while (this.getState() === State.Unwinding) {
-				if (!this.exports) throw new Error("Exports not initialized");
-				this.exports.asyncify_stop_unwind();
-				this.value = await (this.value as Promise<unknown>);
+			const result = fn(...args);
+			if (this.getState() !== State.Unwinding) {
 				this.assertNoneState();
-				this.exports.asyncify_start_rewind(DATA_ADDR);
-				result = fn(...args);
+				return result;
 			}
-
-			this.assertNoneState();
-			return result;
+			return this.resumeExport(fn, args, result);
 		};
 
 		WRAPPED_EXPORTS.set(fn, newExport);
 		return newExport;
+	}
+
+	private async resumeExport(
+		fn: CallableFn,
+		args: unknown[],
+		initialResult: unknown,
+	): Promise<unknown> {
+		let result = initialResult;
+		while (this.getState() === State.Unwinding) {
+			if (!this.exports) throw new Error("Exports not initialized");
+			this.exports.asyncify_stop_unwind();
+			this.value = await (this.value as Promise<unknown>);
+			this.assertNoneState();
+			this.exports.asyncify_start_rewind(DATA_ADDR);
+			result = fn(...args);
+		}
+		this.assertNoneState();
+		return result;
 	}
 
 	wrapExports(exports: WebAssembly.Exports): WebAssembly.Exports {

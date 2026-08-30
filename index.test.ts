@@ -14,7 +14,14 @@ function expectFailure(result: { success: boolean; error?: string; exitCode: num
 	}
 }
 
-const BUNDLED_PERL_VERSION = "v5.42.0";
+const BUNDLED_PERL_VERSION = "v5.44.0";
+
+const runtimeWasmPath = process.env.ZEROPERL_TEST_WASM ?? "./zeroperl.wasm";
+
+const runtimeFetch = async () => {
+	const wasm = await readFile(runtimeWasmPath);
+	return new Response(wasm, { headers: { "content-type": "application/wasm" } });
+};
 
 describe("Basic Operations", () => {
 	it("should create and dispose ZeroPerl instance", async () => {
@@ -1205,6 +1212,71 @@ describe("Calling Perl from JavaScript", () => {
 });
 
 describe("File System", () => {
+	it("should enumerate directories and normalize nested paths", async () => {
+		const fs = new MemoryFileSystem({ "/": "" });
+		fs.ensureDir("/fixtures/nested");
+		fs.addFile("/fixtures/alpha.txt", "alpha");
+		fs.addFile("/fixtures/nested/child.txt", "child");
+
+		let output = "";
+		const perl = await ZeroPerl.create({
+			fetch: runtimeFetch,
+			fileSystem: fs,
+			stdout: (data) => {
+				output += typeof data === "string" ? data : new TextDecoder().decode(data);
+			},
+		});
+
+		const result = await perl.eval(`
+			opendir my $dh, '/fixtures/./nested/..' or die "opendir: $!";
+			my @entries = sort grep { $_ ne '.' && $_ ne '..' } readdir $dh;
+			closedir $dh;
+			open my $fh, '<', '/fixtures/nested/../alpha.txt' or die "open: $!";
+			local $/;
+			my $content = <$fh>;
+			close $fh;
+			print join('|', join(',', @entries), $content);
+		`);
+		expectSuccess(result);
+		perl.flush();
+		expect(output).toBe("alpha.txt,nested|alpha");
+		await perl.dispose();
+	});
+
+	it("should give separately opened files independent offsets", async () => {
+		const fs = new MemoryFileSystem({ "/": "" });
+		fs.addFile("/letters.txt", "abc");
+
+		let output = "";
+		const perl = await ZeroPerl.create({
+			fetch: runtimeFetch,
+			fileSystem: fs,
+			stdout: (data) => {
+				output += typeof data === "string" ? data : new TextDecoder().decode(data);
+			},
+		});
+
+		const result = await perl.eval(`
+			open my $first, '<', '/letters.txt' or die $!;
+			open my $second, '<', '/letters.txt' or die $!;
+			read $first, my $a, 1;
+			read $second, my $b, 1;
+			print "$a$b";
+		`);
+		expectSuccess(result);
+		perl.flush();
+		expect(output).toBe("aa");
+		await perl.dispose();
+	});
+
+	it("should prevent relative paths from escaping a preopen", () => {
+		const fs = new MemoryFileSystem({ "/sandbox": "" });
+		expect(fs.resolvePath("/sandbox/nested", "../inside.txt", "/sandbox"))
+			.toBe("/sandbox/inside.txt");
+		expect(fs.resolvePath("/sandbox/nested", "../../outside.txt", "/sandbox"))
+			.toBeNull();
+	});
+
 	it("should run script files", async () => {
 		const fs = new MemoryFileSystem({ "/": "/" });
 		fs.addFile("/test.pl", 'print "Hello from file!"');
@@ -1316,6 +1388,48 @@ describe("File System", () => {
 		expect(output).toBe("File content Blob content");
 
 		perl.dispose();
+	});
+});
+
+describe("Async destruction", () => {
+	it("should keep synchronous DESTROY callbacks on the synchronous fast path", async () => {
+		const perl = await ZeroPerl.create({ fetch: runtimeFetch });
+		let destroyCount = 0;
+		perl.registerFunction("test_destroy", () => {
+			destroyCount += 1;
+		});
+		expectSuccess(await perl.eval(`
+			sub make_destroy_probe { bless {}, 'DestroyProbe' }
+			package DestroyProbe;
+			sub DESTROY { main::test_destroy() }
+		`));
+
+		const value = await perl.call("main::make_destroy_probe");
+		expect(value).not.toBeNull();
+		const released = value?.dispose();
+		expect(released).toBeUndefined();
+		expect(destroyCount).toBe(1);
+		await perl.shutdown();
+	});
+
+	it("should await DESTROY callbacks that return promises", async () => {
+		const perl = await ZeroPerl.create({ fetch: runtimeFetch });
+		let destroyCount = 0;
+		perl.registerFunction("test_destroy", async () => {
+			await Promise.resolve();
+			destroyCount += 1;
+		});
+		expectSuccess(await perl.eval(`
+			sub make_destroy_probe { bless {}, 'DestroyProbe' }
+			package DestroyProbe;
+			sub DESTROY { main::test_destroy() }
+		`));
+
+		const value = await perl.call("main::make_destroy_probe");
+		expect(value).not.toBeNull();
+		await value?.dispose();
+		expect(destroyCount).toBe(1);
+		await perl.shutdown();
 	});
 });
 

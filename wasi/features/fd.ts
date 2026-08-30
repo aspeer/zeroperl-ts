@@ -453,23 +453,39 @@ export class MemoryFileSystem {
     return fileNode;
   }
 
+  /** Normalize an absolute or relative path without allowing `..` past root. */
+  normalizePath(path: string): string {
+    const parts: string[] = [];
+    for (const part of path.replace(/\/+/g, "/").split("/")) {
+      if (!part || part === ".") continue;
+      if (part === "..") {
+        parts.pop();
+      } else {
+        parts.push(part);
+      }
+    }
+    return `/${parts.join("/")}`;
+  }
+
   /**
-   * Normalizes a path by removing duplicate slashes and trailing slashes.
-   * @param path Path to normalize
-   * @returns Normalized path
+   * Resolve a WASI path relative to an open directory while enforcing its
+   * preopened capability root. Returns null when `..` would escape that root.
    */
-  private normalizePath(path: string): string {
-    // Handle empty path
-    if (!path) return "/";
+  resolvePath(basePath: string, relativePath: string, rootPath: string): string | null {
+    const rootParts = this.normalizePath(rootPath).split("/").filter(Boolean);
+    const parts = this.normalizePath(basePath).split("/").filter(Boolean);
+    if (rootParts.some((part, index) => parts[index] !== part)) return null;
 
-    // Ensure path starts with a slash
-    const withLeadingSlash = path.startsWith("/") ? path : `/${path}`;
-
-    // Remove duplicate slashes and normalize
-    const normalized = withLeadingSlash.replace(/\/+/g, "/");
-
-    // Remove trailing slash unless it's the root path
-    return normalized === "/" ? normalized : normalized.replace(/\/+$/, "");
+    for (const part of relativePath.replace(/\/+/g, "/").split("/")) {
+      if (!part || part === ".") continue;
+      if (part === "..") {
+        if (parts.length <= rootParts.length) return null;
+        parts.pop();
+      } else {
+        parts.push(part);
+      }
+    }
+    return `/${parts.join("/")}`;
   }
 }
 
@@ -564,14 +580,6 @@ export function useMemoryFS(
         };
         nextFd++;
       }
-    }
-
-    function getFileFromPath(guestPath: string): OpenFile | null {
-      for (const fd in files) {
-        const file = files[fd];
-        if (file?.path === guestPath) return file;
-      }
-      return null;
     }
 
     function getFileFromFD(fileDescriptor: FileDescriptor): OpenFile | null {
@@ -729,6 +737,55 @@ export function useMemoryFS(
         return WASIAbi.WASI_ESUCCESS;
       },
 
+      fd_readdir: (
+        fd: number,
+        buf: number,
+        bufLen: number,
+        cookie: bigint,
+        bufUsed: number
+      ) => {
+        const view = memoryView();
+        const file = getFileFromFD(fd);
+        if (!file) return WASIAbi.WASI_ERRNO_BADF;
+        if (file.node.type !== "dir") return WASIAbi.WASI_ERRNO_NOTDIR;
+
+        const start = Number(cookie);
+        if (!Number.isSafeInteger(start) || start < 0) {
+          return WASIAbi.WASI_ERRNO_INVAL;
+        }
+
+        const entries = Object.entries(file.node.entries);
+        let used = 0;
+        for (let index = start; index < entries.length; index++) {
+          const entry = entries[index];
+          if (!entry) break;
+          const [name, node] = entry;
+          const nameBytes = new TextEncoder().encode(name);
+          const entryLength = 24 + nameBytes.length;
+          if (entryLength > bufLen - used) break;
+
+          const offset = buf + used;
+          view.setBigUint64(offset, BigInt(index + 1), true);
+          view.setBigUint64(offset + 8, BigInt(index + 1), true);
+          view.setUint32(offset + 16, nameBytes.length, true);
+          view.setUint8(
+            offset + 20,
+            node.type === "dir"
+              ? WASIAbi.WASI_FILETYPE_DIRECTORY
+              : node.type === "character"
+                ? WASIAbi.WASI_FILETYPE_CHARACTER_DEVICE
+                : WASIAbi.WASI_FILETYPE_REGULAR_FILE
+          );
+          view.setUint8(offset + 21, 0);
+          view.setUint16(offset + 22, 0, true);
+          new Uint8Array(view.buffer, offset + 24, nameBytes.length).set(nameBytes);
+          used += entryLength;
+        }
+
+        view.setUint32(bufUsed, used, true);
+        return WASIAbi.WASI_ESUCCESS;
+      },
+
       fd_seek: (fd: number, offset: bigint, whence: number, newOffsetPtr: number) => {
         const view = memoryView();
 
@@ -876,36 +933,36 @@ export function useMemoryFS(
 
         const path = abi.readString(view, pathPtr, pathLen);
 
-        const guestPath =
-          (dirEntry.path.endsWith("/") ? dirEntry.path : `${dirEntry.path}/`) +
-          path;
+        const capabilityRoot = dirEntry.preopenPath ?? dirEntry.path;
+        const guestPath = fileSystem.resolvePath(dirEntry.path, path, capabilityRoot);
+        if (!guestPath) return WASIAbi.WASI_ERRNO_NOTCAPABLE;
 
-        const existing = getFileFromPath(guestPath);
-        if (existing) {
-          view.setUint32(opened_fd, existing.fd, true);
-          return WASIAbi.WASI_ESUCCESS;
-        }
-
-        let target = fileSystem.resolve(dirEntry.node, path);
+        let target = fileSystem.lookup(guestPath);
         const O_CREAT = 1 << 0;
-        const O_EXCL = 1 << 1;
-        const O_TRUNC = 1 << 2;
+        const O_DIRECTORY = 1 << 1;
+        const O_EXCL = 1 << 2;
+        const O_TRUNC = 1 << 3;
 
         if (target) {
-          if (oflags & O_EXCL) return WASIAbi.WASI_ERRNO_EXIST;
+          if ((oflags & O_CREAT) && (oflags & O_EXCL)) return WASIAbi.WASI_ERRNO_EXIST;
+          if ((oflags & O_DIRECTORY) && target.type !== "dir") {
+            return WASIAbi.WASI_ERRNO_NOTDIR;
+          }
           if (oflags & O_TRUNC) {
             if (target.type !== "file") return WASIAbi.WASI_ERRNO_INVAL;
             target.content = new Uint8Array(0);
           }
         } else {
           if (!(oflags & O_CREAT)) return WASIAbi.WASI_ERRNO_NOENT;
-          target = fileSystem.createFileIn(dirEntry.node, path);
+          if (oflags & O_DIRECTORY) return WASIAbi.WASI_ERRNO_NOENT;
+          target = fileSystem.createFile(guestPath, new Uint8Array(0));
         }
 
         files[nextFd] = {
           node: target,
           position: 0,
           isPreopen: false,
+          preopenPath: capabilityRoot,
           path: guestPath,
           fd: nextFd,
         };
@@ -936,39 +993,36 @@ export function useMemoryFS(
 
         const path = abi.readString(view, pathPtr, pathLen);
 
-        const guestPath =
-          (dirEntry.path.endsWith("/") ? dirEntry.path : `${dirEntry.path}/`) +
-          path;
+        const capabilityRoot = dirEntry.preopenPath ?? dirEntry.path;
+        const guestPath = fileSystem.resolvePath(dirEntry.path, path, capabilityRoot);
+        if (!guestPath) return WASIAbi.WASI_ERRNO_NOTCAPABLE;
 
-        const existing = getFileFromPath(guestPath);
-        if (existing) {
-          view.setUint32(opened_fd, existing.fd, true);
-          return WASIAbi.WASI_ESUCCESS;
-        }
-
-        let target = fileSystem.resolve(dirEntry.node as DirectoryNode, path);
+        let target = fileSystem.lookup(guestPath);
         const O_CREAT = 1 << 0;
-        const O_EXCL = 1 << 1;
-        const O_TRUNC = 1 << 2;
+        const O_DIRECTORY = 1 << 1;
+        const O_EXCL = 1 << 2;
+        const O_TRUNC = 1 << 3;
 
         if (target) {
-          if (oflags & O_EXCL) return WASIAbi.WASI_ERRNO_EXIST;
+          if ((oflags & O_CREAT) && (oflags & O_EXCL)) return WASIAbi.WASI_ERRNO_EXIST;
+          if ((oflags & O_DIRECTORY) && target.type !== "dir") {
+            return WASIAbi.WASI_ERRNO_NOTDIR;
+          }
           if (oflags & O_TRUNC) {
             if (target.type !== "file") return WASIAbi.WASI_ERRNO_INVAL;
             (target as FileNode).content = new Uint8Array(0);
           }
         } else {
           if (!(oflags & O_CREAT)) return WASIAbi.WASI_ERRNO_NOENT;
-          target = fileSystem.createFileIn(
-            dirEntry.node as DirectoryNode,
-            path
-          );
+          if (oflags & O_DIRECTORY) return WASIAbi.WASI_ERRNO_NOENT;
+          target = fileSystem.createFile(guestPath, new Uint8Array(0));
         }
 
         files[nextFd] = {
           node: target,
           position: 0,
           isPreopen: false,
+          preopenPath: capabilityRoot,
           path: guestPath,
           fd: nextFd,
         };
@@ -993,10 +1047,9 @@ export function useMemoryFS(
         }
 
         const guestRelPath = abi.readString(view, pathPtr, pathLen);
-        const basePath = file.path;
-        const fullGuestPath = basePath.endsWith("/")
-          ? basePath + guestRelPath
-          : `${basePath}/${guestRelPath}`;
+        const capabilityRoot = file.preopenPath ?? file.path;
+        const fullGuestPath = fileSystem.resolvePath(file.path, guestRelPath, capabilityRoot);
+        if (!fullGuestPath) return WASIAbi.WASI_ERRNO_NOTCAPABLE;
 
         const node = fileSystem.lookup(fullGuestPath);
         if (!node) return WASIAbi.WASI_ERRNO_NOENT;

@@ -49,6 +49,10 @@ export class WASIAbi {
      * I/O error.
      */
     static readonly WASI_ERRNO_IO = 29;
+    /**
+     * The requested path escapes the descriptor's preopened capability root.
+     */
+    static readonly WASI_ERRNO_NOTCAPABLE = 76;
 
     /**
      * The file descriptor or file refers to a character device inode.

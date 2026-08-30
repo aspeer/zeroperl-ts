@@ -2,12 +2,18 @@
 
 Perl 5 compiled to WebAssembly. Run Perl scripts in the browser or other JavaScript environments without installing Perl.
 
-Built on [zeroperl](https://github.com/6over3/zeroperl).
+This is the canonical TypeScript bridge for the WebDyne ZeroPerl runtime. The
+bundled artifact currently uses Perl 5.44.0 and is built from
+[aspeer/zeroperl](https://github.com/aspeer/zeroperl).
+
+The published package name remains `@6over3/zeroperl-ts` until a separate
+package-namespace decision is made.
 
 ## Features
 
 - Runs Perl 5 in browser, Node.js, Deno, and Bun
 - Virtual filesystem for script and data files
+- Capability-aware preopens, normalized paths, and directory enumeration
 - Bidirectional data exchange between JavaScript and Perl
 - Register JavaScript functions callable from Perl
 - Call Perl functions from JavaScript
@@ -203,6 +209,10 @@ await perl.runFile('/script.pl');
 
 perl.dispose();
 ```
+
+The WASI filesystem keeps file-descriptor offsets independent, supports
+`opendir`/`readdir`, normalizes `.` and `..`, and rejects paths which escape a
+configured preopen.
 
 ### Running Scripts with Arguments
 
@@ -423,6 +433,9 @@ perl.dispose();
 
 Note: Most bundlers should copy the WASM file when imported explicitly. If your bundler doesn't handle this, configure it to copy static assets or use the CDN approach below.
 
+The `fetch` option may also return another supported ZeroPerl artifact when an
+application deliberately selects a different Perl release.
+
 **From CDN:**
 
 ```html
@@ -608,12 +621,17 @@ const ready = perl.isInitialized() && perl.canEvaluate();
 
 ### `perl.dispose()`, `perl.shutdown()`
 
-Free resources. Use `dispose()` for normal cleanup, `shutdown()` for complete termination.
+Free resources. Use `dispose()` for normal cleanup and `shutdown()` for complete
+termination. Both methods use a synchronous fast path when cleanup does not
+suspend. If a Perl destructor or `END` block calls an asynchronous registered
+JavaScript function, they return a promise and finish only after that callback.
+Using `await` is therefore the safest form and does not force asynchronous work
+onto the normal path.
 
 ```typescript
-perl.dispose();
+await perl.dispose();
 // or
-perl.shutdown();
+await perl.shutdown();
 ```
 
 ### PerlValue Methods

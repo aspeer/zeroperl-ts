@@ -87,6 +87,7 @@ export type PerlConvertible =
 
 /** JavaScript primitive types that Perl values can be converted to. */
 export type JSPrimitive = string | number | boolean | null | undefined;
+export type MaybePromise<T> = T | Promise<T>;
 
 // Synchronous exports (don't trigger asyncjmp_rt_start)
 interface ZeroPerlSyncExports {
@@ -94,8 +95,8 @@ interface ZeroPerlSyncExports {
     malloc: (size: number) => number;
     free: (ptr: number) => void;
 
-    zeroperl_free_interpreter: () => void;
-    zeroperl_shutdown: () => void;
+    zeroperl_free_interpreter: () => MaybePromise<void>;
+    zeroperl_shutdown: () => MaybePromise<void>;
     zeroperl_last_error: () => number;
     zeroperl_clear_error: () => void;
     zeroperl_is_initialized: () => number;
@@ -117,8 +118,8 @@ interface ZeroPerlSyncExports {
     zeroperl_get_type: (val: number) => number;
 
     zeroperl_incref: (val: number) => void;
-    zeroperl_decref: (val: number) => void;
-    zeroperl_value_free: (val: number) => void;
+    zeroperl_decref: (val: number) => MaybePromise<void>;
+    zeroperl_value_free: (val: number) => MaybePromise<void>;
 
     zeroperl_new_array: () => number;
     zeroperl_array_push: (arr: number, val: number) => void;
@@ -126,23 +127,23 @@ interface ZeroPerlSyncExports {
     zeroperl_array_get: (arr: number, idx: number) => number;
     zeroperl_array_set: (arr: number, idx: number, val: number) => number;
     zeroperl_array_length: (arr: number) => number;
-    zeroperl_array_clear: (arr: number) => void;
+    zeroperl_array_clear: (arr: number) => MaybePromise<void>;
     zeroperl_array_to_value: (arr: number) => number;
     zeroperl_value_to_array: (val: number) => number;
-    zeroperl_array_free: (arr: number) => void;
+    zeroperl_array_free: (arr: number) => MaybePromise<void>;
 
     zeroperl_new_hash: () => number;
     zeroperl_hash_set: (h: number, k: number, v: number) => number;
     zeroperl_hash_get: (h: number, k: number) => number;
     zeroperl_hash_exists: (h: number, k: number) => number;
-    zeroperl_hash_delete: (h: number, k: number) => number;
-    zeroperl_hash_clear: (h: number) => void;
+    zeroperl_hash_delete: (h: number, k: number) => MaybePromise<number>;
+    zeroperl_hash_clear: (h: number) => MaybePromise<void>;
     zeroperl_hash_iter_new: (h: number) => number;
     zeroperl_hash_iter_next: (it: number, k: number, v: number) => number;
     zeroperl_hash_iter_free: (it: number) => void;
     zeroperl_hash_to_value: (h: number) => number;
     zeroperl_value_to_hash: (val: number) => number;
-    zeroperl_hash_free: (h: number) => void;
+    zeroperl_hash_free: (h: number) => MaybePromise<void>;
 
     zeroperl_new_ref: (val: number) => number;
     zeroperl_deref: (ref: number) => number;
@@ -157,7 +158,7 @@ interface ZeroPerlSyncExports {
     zeroperl_register_method: (id: number, pkg: number, meth: number) => void;
 
     zeroperl_result_get: (res: number, idx: number) => number;
-    zeroperl_result_free: (res: number) => void;
+    zeroperl_result_free: (res: number) => MaybePromise<void>;
 
     zeroperl_set_host_error: (err: number) => void;
     zeroperl_get_host_error: () => number;
@@ -178,23 +179,22 @@ type ZeroPerlExports = ZeroPerlSyncExports & ZeroPerlAsyncExports & WebAssembly.
 
 // Synchronous exports that should not be wrapped by asyncify
 const SYNC_EXPORTS: string[] = [
-    "zeroperl_free_interpreter", "zeroperl_shutdown", "zeroperl_last_error",
-    "zeroperl_clear_error", "zeroperl_is_initialized", "zeroperl_can_evaluate",
+    "zeroperl_last_error", "zeroperl_clear_error", "zeroperl_is_initialized", "zeroperl_can_evaluate",
     "zeroperl_flush", "zeroperl_new_int", "zeroperl_new_uint", "zeroperl_new_double",
     "zeroperl_new_string", "zeroperl_new_bool", "zeroperl_new_undef",
     "zeroperl_to_int", "zeroperl_to_double", "zeroperl_to_string", "zeroperl_to_bool",
-    "zeroperl_is_undef", "zeroperl_get_type", "zeroperl_incref", "zeroperl_decref",
-    "zeroperl_value_free", "zeroperl_new_array", "zeroperl_array_push",
+    "zeroperl_is_undef", "zeroperl_get_type", "zeroperl_incref",
+    "zeroperl_new_array", "zeroperl_array_push",
     "zeroperl_array_pop", "zeroperl_array_get", "zeroperl_array_set",
-    "zeroperl_array_length", "zeroperl_array_clear", "zeroperl_array_to_value",
-    "zeroperl_value_to_array", "zeroperl_array_free", "zeroperl_new_hash",
+    "zeroperl_array_length", "zeroperl_array_to_value",
+    "zeroperl_value_to_array", "zeroperl_new_hash",
     "zeroperl_hash_set", "zeroperl_hash_get", "zeroperl_hash_exists",
-    "zeroperl_hash_delete", "zeroperl_hash_clear", "zeroperl_hash_iter_new",
+    "zeroperl_hash_iter_new",
     "zeroperl_hash_iter_next", "zeroperl_hash_iter_free", "zeroperl_hash_to_value",
-    "zeroperl_value_to_hash", "zeroperl_hash_free", "zeroperl_new_ref",
+    "zeroperl_value_to_hash", "zeroperl_new_ref",
     "zeroperl_deref", "zeroperl_is_ref", "zeroperl_get_var", "zeroperl_get_array_var",
     "zeroperl_get_hash_var", "zeroperl_set_var", "zeroperl_register_function",
-    "zeroperl_register_method", "zeroperl_result_get", "zeroperl_result_free",
+    "zeroperl_register_method", "zeroperl_result_get",
     "zeroperl_set_host_error", "zeroperl_get_host_error", "zeroperl_clear_host_error",
 ];
 
@@ -241,6 +241,10 @@ export interface ZeroPerlResult {
 
 const textDecoder = new TextDecoder();
 const textEncoder = new TextEncoder();
+
+function isPromiseLike<T>(value: MaybePromise<T>): value is Promise<T> {
+    return typeof value === "object" && value !== null && "then" in value;
+}
 
 let wasmSourceCache: WeakRef<ArrayBuffer> | null = null;
 
@@ -458,17 +462,18 @@ export class PerlValue {
         this.exports.zeroperl_incref(this.ptr);
     }
 
-    /** Decrement the reference count. */
-    decref(): void {
+    /** Decrement the reference count. Await if destruction can call an asynchronous host function. */
+    decref(): MaybePromise<void> {
         this.checkDisposed();
-        this.exports.zeroperl_decref(this.ptr);
+        return this.exports.zeroperl_decref(this.ptr);
     }
 
-    /** Free this value's memory. After calling, this value cannot be used. */
-    dispose(): void {
+    /** Free this value. Await if destruction can call an asynchronous host function. */
+    dispose(): MaybePromise<void> {
         if (this.disposed) return;
-        this.exports.zeroperl_value_free(this.ptr);
+        const released = this.exports.zeroperl_value_free(this.ptr);
         this.disposed = true;
+        return released;
     }
 
     private checkDisposed(): void {
@@ -560,9 +565,9 @@ export class PerlArray {
     }
 
     /** Clear all elements from the array. */
-    clear(): void {
+    clear(): MaybePromise<void> {
         this.checkDisposed();
-        this.exports.zeroperl_array_clear(this.ptr);
+        return this.exports.zeroperl_array_clear(this.ptr);
     }
 
     /**
@@ -609,11 +614,12 @@ export class PerlArray {
         }
     }
 
-    /** Free this array's memory. After calling, this array cannot be used. */
-    dispose(): void {
+    /** Free this array. Await if contained destructors can call asynchronous host functions. */
+    dispose(): MaybePromise<void> {
         if (this.disposed) return;
-        this.exports.zeroperl_array_free(this.ptr);
+        const released = this.exports.zeroperl_array_free(this.ptr);
         this.disposed = true;
+        return released;
     }
 
     private checkDisposed(): void {
@@ -698,20 +704,23 @@ export class PerlHash {
     }
 
     /** Delete a key from the hash. Returns true if key was deleted. */
-    delete(key: string): boolean {
+    delete(key: string): MaybePromise<boolean> {
         this.checkDisposed();
         const keyPtr = this.writeCString(key);
-        try {
-            return this.exports.zeroperl_hash_delete(this.ptr, keyPtr) !== 0;
-        } finally {
-            this.exports.free(keyPtr);
+        const deleted = this.exports.zeroperl_hash_delete(this.ptr, keyPtr);
+        if (isPromiseLike(deleted)) {
+            return deleted
+                .then((result) => result !== 0)
+                .finally(() => this.exports.free(keyPtr));
         }
+        this.exports.free(keyPtr);
+        return deleted !== 0;
     }
 
     /** Clear all entries from the hash. */
-    clear(): void {
+    clear(): MaybePromise<void> {
         this.checkDisposed();
-        this.exports.zeroperl_hash_clear(this.ptr);
+        return this.exports.zeroperl_hash_clear(this.ptr);
     }
 
     /**
@@ -779,11 +788,12 @@ export class PerlHash {
         for (const [, val] of this.entries()) yield val;
     }
 
-    /** Free this hash's memory. After calling, this hash cannot be used. */
-    dispose(): void {
+    /** Free this hash. Await if contained destructors can call asynchronous host functions. */
+    dispose(): MaybePromise<void> {
         if (this.disposed) return;
-        this.exports.zeroperl_hash_free(this.ptr);
+        const released = this.exports.zeroperl_hash_free(this.ptr);
         this.disposed = true;
+        return released;
     }
 
     private writeCString(str: string): number {
@@ -861,9 +871,9 @@ export class ZeroPerl {
         const wasi = new WASI(wasiOptions);
         const perl = new ZeroPerl(wasi);
 
-        const hostCallFunction = async (
+        const hostCallFunction = (
             funcId: number, argc: number, argvPtr: number,
-        ): Promise<number> => perl.handleHostCall(funcId, argc, argvPtr);
+        ): MaybePromise<number> => perl.handleHostCall(funcId, argc, argvPtr);
 
         const { instance } = await instantiate(
             source,
@@ -883,7 +893,18 @@ export class ZeroPerl {
         return perl;
     }
 
-    private async handleHostCall(funcId: number, argc: number, argvPtr: number): Promise<number> {
+    private handleHostResult(result: PerlValue | void): number {
+        if (result instanceof PerlValue) return result.getPtr();
+
+        const undefPtr = this.exports.zeroperl_new_undef();
+        if (undefPtr === 0) {
+            this.setHostError("Failed to allocate return value");
+            return 0;
+        }
+        return undefPtr;
+    }
+
+    private handleHostCall(funcId: number, argc: number, argvPtr: number): MaybePromise<number> {
         const func = this.hostFunctions.get(funcId);
         if (!func) {
             this.setHostError(`Host function ${funcId} not found`);
@@ -902,16 +923,16 @@ export class ZeroPerl {
                     }
                 }
             }
-            const result = await func(...args);
-            if (result instanceof PerlValue) {
-                return result.getPtr();
+            const result = func(...args);
+            if (isPromiseLike(result)) {
+                return result
+                    .then((value) => this.handleHostResult(value))
+                    .catch((error) => {
+                        this.setHostError(error instanceof Error ? error.message : String(error));
+                        return 0;
+                    });
             }
-            const undefPtr = this.exports.zeroperl_new_undef();
-            if (undefPtr === 0) {
-                this.setHostError("Failed to allocate return value");
-                return 0;
-            }
-            return undefPtr;
+            return this.handleHostResult(result);
 
         } catch (error) {
             this.setHostError(error instanceof Error ? error.message : String(error));
@@ -1230,7 +1251,7 @@ export class ZeroPerl {
             this.exports.free(resultPtr);
 
             if (context === "void") {
-                for (const val of results) val.dispose();
+                for (const val of results) await val.dispose();
                 return;
             }
             if (context === "scalar") return results[0] ?? null;
@@ -1372,19 +1393,25 @@ export class ZeroPerl {
         return this.exports.zeroperl_can_evaluate() !== 0;
     }
 
-    /** Free the Perl interpreter's memory. After calling, this instance cannot be used. */
-    dispose(): void {
+    /** Free the interpreter. Await if Perl END/DESTROY code calls asynchronous host functions. */
+    dispose(): MaybePromise<void> {
         if (this.isDisposed) return;
-        this.exports.zeroperl_free_interpreter();
+        const released = this.exports.zeroperl_free_interpreter();
         this.isDisposed = true;
+        if (isPromiseLike(released)) {
+            return released.finally(() => this.hostFunctions.clear());
+        }
         this.hostFunctions.clear();
     }
 
-    /** Shut down the Perl system. After calling, this instance cannot be used. */
-    shutdown(): void {
+    /** Shut down Perl. Await if Perl END/DESTROY code calls asynchronous host functions. */
+    shutdown(): MaybePromise<void> {
         if (this.isDisposed) return;
-        this.exports.zeroperl_shutdown();
+        const released = this.exports.zeroperl_shutdown();
         this.isDisposed = true;
+        if (isPromiseLike(released)) {
+            return released.finally(() => this.hostFunctions.clear());
+        }
         this.hostFunctions.clear();
     }
 
@@ -1447,6 +1474,6 @@ export async function getPerlVersion(options?: ZeroPerlOptions): Promise<string>
     perl.flush();
 
     const version = captured.trim();
-    perl.dispose();
+    await perl.dispose();
     return version;
 }
