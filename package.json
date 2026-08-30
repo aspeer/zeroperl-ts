@@ -6,7 +6,8 @@
     "build": "npm run build:esm && npm run build:cjs && bun build.ts",
     "build:esm": "tsc --emitDeclarationOnly -p tsconfig.esm.json",
     "build:cjs": "tsc --emitDeclarationOnly -p tsconfig.cjs.json",
-    "test": "bun test"
+    "test": "bun test",
+    "smoke:external-runtime": "node tools/smoke-external-runtime.mjs"
   },
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/esm/index.js",

@@ -11,3 +11,8 @@ The TypeScript bridge suite covers:
 
 Run `bun test` for the suite and `npm run build` to regenerate and type-check
 the distributions.
+
+`npm run smoke:external-runtime -- /path/to/zeroperl.wasm` loads an arbitrary
+compatible artifact through the public custom-fetch option. It repeatedly
+releases a Perl object whose `DESTROY` method awaits a JavaScript host callback,
+then evaluates more Perl to prove Asyncify returned to its normal state.
