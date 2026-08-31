@@ -7,6 +7,6 @@
 - [x] Rename the private canonical package to `@aspeer/zeroperl-ts` for local
   filesystem consumption.
 - [x] Add first-class `WebAssembly.Module` loading for Worker runtimes.
-- [ ] Integrate the canonical local package with the Worker and browser hosts.
+- [x] Integrate the canonical local package with the Worker and browser hosts.
 
 Publication is intentionally disabled. Pushes require separate approval.
