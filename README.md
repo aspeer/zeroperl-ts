@@ -6,8 +6,8 @@ This is the canonical TypeScript bridge for the WebDyne ZeroPerl runtime. The
 bundled artifact currently uses Perl 5.44.0 and is built from
 [aspeer/zeroperl](https://github.com/aspeer/zeroperl).
 
-The published package name remains `@6over3/zeroperl-ts` until a separate
-package-namespace decision is made.
+The package is named `@aspeer/zeroperl-ts`. It is a private project package:
+consume it from a local checkout rather than npm or a CDN.
 
 ## Features
 
@@ -23,23 +23,24 @@ package-namespace decision is made.
 
 ## Installation
 
-```bash
-npm install @6over3/zeroperl-ts
-# or
-bun add @6over3/zeroperl-ts
+Add the checkout as a filesystem dependency. For sibling repositories in the
+WebDyne workspace this is typically:
+
+```json
+{
+  "dependencies": {
+    "@aspeer/zeroperl-ts": "file:../../Development.github/aspeer-zeroperl-ts"
+  }
+}
 ```
 
-Or, for [Browser Usage](#browser-usage), copy the zeroperl WASM binary to your local website (to avoid CORS errors).
-
-```bash
-# The -L option allows the CDN to redirect to the latest version
-curl -L -O https://esm.sh/@6over3/zeroperl-ts/zeroperl.wasm
-```
+Run `npm install` after adding it. Browser deployments must stage both the ESM
+bundle and chosen `zeroperl.wasm` artifact on the same local site.
 
 ## Quick Start
 
 ```typescript
-import { ZeroPerl } from '@6over3/zeroperl-ts';
+import { ZeroPerl } from '@aspeer/zeroperl-ts';
 
 const perl = await ZeroPerl.create();
 await perl.eval('print "Hello, World!\\n"');
@@ -70,7 +71,7 @@ await perl.eval(`
 ### Evaluating Perl Code
 
 ```typescript
-import { ZeroPerl } from '@6over3/zeroperl-ts';
+import { ZeroPerl } from '@aspeer/zeroperl-ts';
 
 const perl = await ZeroPerl.create();
 
@@ -189,7 +190,7 @@ perl.dispose();
 ### Creating a Virtual Filesystem
 
 ```typescript
-import { ZeroPerl, MemoryFileSystem } from '@6over3/zeroperl-ts';
+import { ZeroPerl, MemoryFileSystem } from '@aspeer/zeroperl-ts';
 
 const fs = new MemoryFileSystem({ "/": "" });
 
@@ -414,8 +415,8 @@ perl.dispose();
 **With bundler (recommended):**
 
 ```typescript
-import { ZeroPerl } from '@6over3/zeroperl-ts';
-import zeroperl from '@6over3/zeroperl-ts/zeroperl.wasm';
+import { ZeroPerl } from '@aspeer/zeroperl-ts';
+import zeroperl from '@aspeer/zeroperl-ts/zeroperl.wasm';
 
 const perl = await ZeroPerl.create({
   fetch: () => fetch(zeroperl),
@@ -431,41 +432,19 @@ await perl.eval(`
 perl.dispose();
 ```
 
-Note: Most bundlers should copy the WASM file when imported explicitly. If your bundler doesn't handle this, configure it to copy static assets or use the CDN approach below.
+Most bundlers copy the WASM file when imported explicitly. If yours does not,
+configure it to stage the package's ESM bundle and WASM asset locally.
 
 The `fetch` option may also return another supported ZeroPerl artifact when an
 application deliberately selects a different Perl release.
 
-**From CDN:**
+Cloudflare Workers may pass their module-rule import without a loader shim:
 
-```html
-<!DOCTYPE html>
-<html>
-<body>
-  <div id="output"></div>
-  
-  <script type="module">
-    import { ZeroPerl } from 'https://esm.sh/@6over3/zeroperl-ts';
-    
-    const output = document.getElementById('output');
-    
-    const perl = await ZeroPerl.create({
-      stdout: (data) => {
-        const text = typeof data === 'string' ? data : new TextDecoder().decode(data);
-        output.innerHTML += text.replace(/\n/g, '<br>');
-      }
-    });
-    
-    await perl.eval(`
-      $| = 1;
-      print "Hello from Perl!\\n";
-      print "Running in: $^O\\n";
-    `);
+```typescript
+import zeroperlModule from './zeroperl.wasm';
+import { ZeroPerl } from '@aspeer/zeroperl-ts';
 
-    perl.dispose();
-  </script>
-</body>
-</html>
+const perl = await ZeroPerl.create({ wasmModule: zeroperlModule });
 ```
 
 ## API Reference
@@ -680,7 +659,7 @@ await perl.shutdown();
 ### Processing JSON
 
 ```typescript
-import { ZeroPerl, MemoryFileSystem } from '@6over3/zeroperl-ts';
+import { ZeroPerl, MemoryFileSystem } from '@aspeer/zeroperl-ts';
 
 const fs = new MemoryFileSystem({ "/": "" });
 fs.addFile("/data.json", JSON.stringify({ users: ['Alice', 'Bob'] }));

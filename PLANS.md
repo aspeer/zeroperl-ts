@@ -4,10 +4,9 @@
 - [x] Validate the bundled Perl 5.44.0 standard artifact and generated outputs.
 - [x] Exercise asynchronous ownership with each supported runtime artifact
   from `zeroperl`.
-- [x] Integrate the consolidated local package and 5.44.0 artifact with
-  `wasm-WebDyne-PAGI` without changing the public package namespace.
+- [x] Rename the private canonical package to `@aspeer/zeroperl-ts` for local
+  filesystem consumption.
+- [x] Add first-class `WebAssembly.Module` loading for Worker runtimes.
+- [ ] Integrate the canonical local package with the Worker and browser hosts.
 
-The Worker retains its idempotent compatibility patch for the published
-1.0.10 package until a consolidated package version is approved and published.
-
-Publication and pushes require separate approval.
+Publication is intentionally disabled. Pushes require separate approval.

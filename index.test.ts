@@ -2680,6 +2680,28 @@ describe("Custom fetch in Node.js", () => {
 	});
 });
 
+describe("Precompiled WebAssembly module", () => {
+	it("should initialize without fetching or loading the bundled module", async () => {
+		const wasm = await readFile(runtimeWasmPath);
+		const wasmModule = await WebAssembly.compile(wasm);
+		let fetchCalled = false;
+
+		const perl = await ZeroPerl.create({
+			wasmModule,
+			fetch: async () => {
+				fetchCalled = true;
+				throw new Error("fetch must not run when wasmModule is supplied");
+			},
+		});
+
+		expect(fetchCalled).toBe(false);
+		expect(perl.isInitialized()).toBe(true);
+		const result = await perl.eval("1 + 1");
+		expectSuccess(result);
+		await perl.dispose();
+	});
+});
+
 describe("getPerlVersion", () => {
 	it("should return the bundled Perl version", async () => {
 		const version = await getPerlVersion();

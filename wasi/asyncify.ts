@@ -232,22 +232,25 @@ Object.defineProperty(Instance.prototype, "exports", { enumerable: true });
 /**
  * Instantiate a WebAssembly module with asyncify support.
  *
- * @param source - The WebAssembly binary
+ * @param source - The WebAssembly binary or a precompiled module
  * @param imports - Import object for the module
  * @param options - Asyncify options including which exports to skip wrapping
  */
 export async function instantiate(
-	source: ArrayBufferLike,
+	source: BufferSource | WebAssembly.Module,
 	imports?: Imports,
 	options?: AsyncifyOptions,
 ): Promise<WebAssembly.WebAssemblyInstantiatedSource> {
 	const state = new Asyncify(options);
-	const result = await WebAssembly.instantiate(
-		source,
+	const module = source instanceof WebAssembly.Module
+		? source
+		: await WebAssembly.compile(source);
+	const instance = await WebAssembly.instantiate(
+		module,
 		state.wrapImports(imports),
 	);
-	state.init(result.instance, imports);
-	return result;
+	state.init(instance, imports);
+	return { instance, module };
 }
 
 /**

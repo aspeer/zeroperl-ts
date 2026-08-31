@@ -8,6 +8,8 @@ The TypeScript bridge suite covers:
 - independent file descriptor offsets and directory enumeration;
 - normalized paths and preopen escape rejection; and
 - generated CommonJS, ESM, declaration, and bundled WASM outputs.
+- direct initialization from a precompiled `WebAssembly.Module` without a
+  loader or global WebAssembly patch.
 
 Run `bun test` for the suite and `npm run build` to regenerate and type-check
 the distributions.

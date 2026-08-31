@@ -1,9 +1,10 @@
 # ZeroPerl TypeScript decisions
 
-## D001: Preserve the package namespace for Milestone 1
+## D001: Use the local canonical package namespace
 
-The package remains `@6over3/zeroperl-ts`. Renaming a public package is a
-separate compatibility and publication decision.
+The consolidated bridge is named `@aspeer/zeroperl-ts`, is private, and is
+consumed from the local filesystem. It is not published to npm or loaded from
+a CDN. The upstream authorship and license remain recorded in package metadata.
 
 ## D002: Hybrid Asyncify API
 
@@ -16,3 +17,9 @@ are typed as `MaybePromise` so callers can safely await cleanup.
 Path normalization must not permit `..` to escape a configured preopen.
 Repeated opens receive independent descriptor offsets, and directory reads use
 WASI-compatible cookies and dirents.
+
+## D004: Accept precompiled WebAssembly modules
+
+Cloudflare Workers provide imported Wasm as `WebAssembly.Module`. The public
+creation options accept that module directly so consumers do not patch global
+WebAssembly APIs or emulate `fetch` responses.

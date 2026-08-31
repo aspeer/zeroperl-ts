@@ -25,7 +25,7 @@ export { MemoryFileSystem } from "./wasi/features/fd";
  * @example
  * Basic usage:
  * ```typescript
- * import { ZeroPerl } from "@6over3/zeroperl-ts";
+ * import { ZeroPerl } from "@aspeer/zeroperl-ts";
  *
  * const perl = await ZeroPerl.create();
  * await perl.eval('print "Hello, World!\n"');
@@ -230,6 +230,8 @@ export interface ZeroPerlOptions {
     stdout?: (data: string | Uint8Array) => void;
     stderr?: (data: string | Uint8Array) => void;
     fetch?: FetchLike;
+    /** A precompiled module, such as a Cloudflare Workers Wasm module import. */
+    wasmModule?: WebAssembly.Module;
 }
 
 /** Result of a Perl evaluation or file execution. */
@@ -850,7 +852,7 @@ export class ZeroPerl {
      * @throws {ZeroPerlError} If initialization fails
      */
     static async create(options: ZeroPerlOptions = {}): Promise<ZeroPerl> {
-        const source = await loadWasmSource(options.fetch);
+        const source = options.wasmModule ?? await loadWasmSource(options.fetch);
         const fileSystem = options.fileSystem || new MemoryFileSystem({ "/": "" });
 
         const wasiOptions: WASIOptions = {
