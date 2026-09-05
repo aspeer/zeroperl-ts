@@ -1,13 +1,13 @@
-import { WASIAbi, WASIProcExit } from "./abi";
-export { WASIProcExit } from "./abi";
-import type { WASIOptions } from "./options";
+import { WASIAbi, WASIProcExit } from "./abi.js";
+export { WASIProcExit } from "./abi.js";
+import type { WASIOptions } from "./options.js";
 
-export * from "./features/args";
-export * from "./features/clock";
-export * from "./features/environ";
-export { useFS, useStdio, useMemoryFS } from "./features/fd";
-export * from "./features/proc";
-export * from "./features/random";
+export * from "./features/args.js";
+export * from "./features/clock.js";
+export * from "./features/environ.js";
+export { useFS, useStdio, useMemoryFS } from "./features/fd.js";
+export * from "./features/proc.js";
+export * from "./features/random.js";
 
 export class WASI {
     /**

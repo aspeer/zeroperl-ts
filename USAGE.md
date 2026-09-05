@@ -1,53 +1,14 @@
-# ZeroPerl TypeScript bridge — WebDyne integration fork
+# Using @aspeer/zeroperl-ts
 
-This is a fork of [6over3/zeroperl-ts](https://github.com/6over3/zeroperl-ts),
-the JavaScript/TypeScript bridge for the original
-[6over3/zeroperl](https://github.com/6over3/zeroperl) project. This fork supports
-the WebDyne WASM runtime, primarily on Cloudflare Workers today, with the
-potential to support other WASM providers later. The bridge also remains
-usable by applications embedding Perl directly.
-
-**WebDyne-specific guidance is in [WEBDYNE.md](WEBDYNE.md).** Current generic
-installation and API instructions for `@aspeer/zeroperl-ts` are in
-[USAGE.md](USAGE.md). This package is available from npm and maintained on
-the main branch. See [LICENSE](LICENSE) and [NOTICE](NOTICE) for licensing
-and attribution.
-
-## Credits
-
-- [6over3/zeroperl-ts](https://github.com/6over3/zeroperl-ts) and
-  [6over3/zeroperl](https://github.com/6over3/zeroperl): the original projects
-  and their contributors.
-- [lbe/zeroperl-ts](https://github.com/lbe/zeroperl-ts): inherited custom-fetch
-  handling and Perl-version helper work, including
-  [commit 88b3310](https://github.com/lbe/zeroperl-ts/commit/88b3310259b5c8633390e881c6590dfa81eab8e9).
-  [lbe/zeroperl](https://github.com/lbe/zeroperl) also contributed to the
-  runtime build lineage used by this bridge.
-- [lilohuang/zeroperl-ts](https://github.com/lilohuang/zeroperl-ts) and
-  [lilohuang/zeroperl](https://github.com/lilohuang/zeroperl): additional
-  packaging, ExifTool and CI work consulted during consolidation. These are
-  reference/inspiration credits rather than a claim that every patch was merged.
-
-## Original upstream README
-
-The text below is from the original **6over3/zeroperl-ts** repository's
-[README at `5e12fb8`](https://github.com/6over3/zeroperl-ts/blob/5e12fb86cebf09795c32befa390718b3d8ddd3e7/README.md),
-preserved with trailing whitespace removed. Its package names and examples describe that upstream
-revision. Use [USAGE.md](USAGE.md) for this fork's current package and API, and
-[WEBDYNE.md](WEBDYNE.md) for the integration.
-
----
-
-# zeroperl-ts
-
-Perl 5 compiled to WebAssembly. Run Perl scripts in the browser or other JavaScript environments without installing Perl.
-
-Built on [zeroperl](https://github.com/6over3/zeroperl).
+Current installation, API and compatibility guidance for this fork. For upstream
+credits see [README.md](README.md); for WebDyne and Cloudflare integration see
+[WEBDYNE.md](WEBDYNE.md).
 
 ## Features
 
 - Runs Perl 5 in browser, Node.js, Deno, and Bun
 - Virtual filesystem for script and data files
+- Capability-aware preopens, normalized paths, and directory enumeration
 - Bidirectional data exchange between JavaScript and Perl
 - Register JavaScript functions callable from Perl
 - Call Perl functions from JavaScript
@@ -57,28 +18,27 @@ Built on [zeroperl](https://github.com/6over3/zeroperl).
 
 ## Installation
 
-```bash
-npm install @6over3/zeroperl-ts
-# or
-bun add @6over3/zeroperl-ts
+Install from npm:
+
+```sh
+npm install @aspeer/zeroperl-ts@1.1.0
 ```
 
-Or, for [Browser Usage](#browser-usage), copy the zeroperl WASM binary to your local website (to avoid CORS errors).
+No Perl installation or build tools are needed to consume the npm package.
 
-```bash
-# The -L option allows the CDN to redirect to the latest version
-curl -L -O https://esm.sh/@6over3/zeroperl-ts/zeroperl.wasm
-```
+Browser deployments must serve the ESM bundle and its adjacent `zeroperl.wasm`
+together. Custom WASM loading uses `fetch` or a precompiled `wasmModule`. The non-Asyncify reactor is not interchangeable with
+the normal runtime. Each selected binary must be qualified against this bridge.
 
 ## Quick Start
 
 ```typescript
-import { ZeroPerl } from '@6over3/zeroperl-ts';
+import { ZeroPerl } from '@aspeer/zeroperl-ts';
 
-const perl = await ZeroPerl.create();
+const perl = await ZeroPerl.create({ stdout: data => console.log(data) });
 await perl.eval('print "Hello, World!\\n"');
 perl.flush(); // Required to see output
-perl.dispose();
+await perl.dispose();
 ```
 
 ## Output Buffering
@@ -104,7 +64,7 @@ await perl.eval(`
 ### Evaluating Perl Code
 
 ```typescript
-import { ZeroPerl } from '@6over3/zeroperl-ts';
+import { ZeroPerl } from '@aspeer/zeroperl-ts';
 
 const perl = await ZeroPerl.create();
 
@@ -118,7 +78,7 @@ if (!result.success) {
   console.error('Error:', result.error);
 }
 
-perl.dispose();
+await perl.dispose();
 ```
 
 ### Capturing Output
@@ -143,7 +103,7 @@ console.log(output);
 // Line 1
 // Line 2
 
-perl.dispose();
+await perl.dispose();
 ```
 
 ### Exchanging Data
@@ -167,7 +127,7 @@ const result = perl.getVariable('result');
 console.log(result.toInt()); // 4
 
 result.dispose();
-perl.dispose();
+await perl.dispose();
 ```
 
 ### Working with Arrays and Hashes
@@ -199,7 +159,7 @@ const jsObject = hash.project(); // { name: 'Alice', age: 30, active: true }
 
 arr.dispose();
 hash.dispose();
-perl.dispose();
+await perl.dispose();
 ```
 
 ### Command-Line Arguments
@@ -215,7 +175,7 @@ await perl.eval(`
   }
 `, ['foo', 'bar', 'baz']);
 
-perl.dispose();
+await perl.dispose();
 ```
 
 ## Working with Files
@@ -223,7 +183,7 @@ perl.dispose();
 ### Creating a Virtual Filesystem
 
 ```typescript
-import { ZeroPerl, MemoryFileSystem } from '@6over3/zeroperl-ts';
+import { ZeroPerl, MemoryFileSystem } from '@aspeer/zeroperl-ts';
 
 const fs = new MemoryFileSystem({ "/": "" });
 
@@ -241,8 +201,12 @@ const perl = await ZeroPerl.create({ fileSystem: fs });
 
 await perl.runFile('/script.pl');
 
-perl.dispose();
+await perl.dispose();
 ```
+
+The WASI filesystem keeps file-descriptor offsets independent, supports
+`opendir`/`readdir`, normalizes `.` and `..`, and rejects paths which escape a
+configured preopen.
 
 ### Running Scripts with Arguments
 
@@ -259,7 +223,7 @@ const perl = await ZeroPerl.create({ fileSystem: fs });
 await perl.runFile('/greet.pl', ['Alice', 'Hello']);
 // Output: Hello, Alice!
 
-perl.dispose();
+await perl.dispose();
 ```
 
 ### Reading and Writing Files
@@ -282,7 +246,7 @@ await perl.eval(`
 const content = fs.readFile('/output.txt');
 console.log(content); // "Generated content\n"
 
-perl.dispose();
+await perl.dispose();
 ```
 
 ## Advanced Usage
@@ -306,7 +270,7 @@ await perl.eval(`
   print "Sum: $sum\\n";
 `);
 
-perl.dispose();
+await perl.dispose();
 ```
 
 ### Registering JavaScript Methods
@@ -325,7 +289,7 @@ await perl.eval(`
   print "Square: $result\\n";
 `);
 
-perl.dispose();
+await perl.dispose();
 ```
 
 ### Calling Perl Functions from JavaScript
@@ -359,7 +323,7 @@ await perl.call("some_sub", [], "void");
 arg.dispose();
 greeting?.dispose();
 for (const v of values) v.dispose();
-perl.dispose();
+await perl.dispose();
 ```
 
 ### Error Handling
@@ -383,7 +347,7 @@ console.log(error); // "Something went wrong! at ..."
 // Clear error
 perl.clearError();
 
-perl.dispose();
+await perl.dispose();
 ```
 
 ### Environment Variables
@@ -402,7 +366,7 @@ await perl.eval(`
   print "Debug: $ENV{DEBUG}\\n";
 `);
 
-perl.dispose();
+await perl.dispose();
 ```
 
 ### Resetting State
@@ -420,7 +384,7 @@ const val2 = perl.getVariable('counter');
 console.log(val2); // null
 
 val1?.dispose();
-perl.dispose();
+await perl.dispose();
 ```
 
 ### Progressive Output
@@ -436,7 +400,7 @@ for (let i = 0; i < 5; i++) {
   await new Promise(r => setTimeout(r, 500));
 }
 
-perl.dispose();
+await perl.dispose();
 ```
 
 ## Browser Usage
@@ -444,8 +408,8 @@ perl.dispose();
 **With bundler (recommended):**
 
 ```typescript
-import { ZeroPerl } from '@6over3/zeroperl-ts';
-import zeroperl from '@6over3/zeroperl-ts/zeroperl.wasm';
+import { ZeroPerl } from '@aspeer/zeroperl-ts';
+import zeroperl from '@aspeer/zeroperl-ts/zeroperl.wasm';
 
 const perl = await ZeroPerl.create({
   fetch: () => fetch(zeroperl),
@@ -458,42 +422,14 @@ await perl.eval(`
   print "Running in: $^O\\n";
 `);
 
-perl.dispose();
+await perl.dispose();
 ```
 
-Note: Most bundlers should copy the WASM file when imported explicitly. If your bundler doesn't handle this, configure it to copy static assets or use the CDN approach below.
+Most bundlers copy the WASM file when imported explicitly. If yours does not,
+configure it to stage the package's ESM bundle and WASM asset locally.
 
-**From CDN:**
-
-```html
-<!DOCTYPE html>
-<html>
-<body>
-  <div id="output"></div>
-
-  <script type="module">
-    import { ZeroPerl } from 'https://esm.sh/@6over3/zeroperl-ts';
-
-    const output = document.getElementById('output');
-
-    const perl = await ZeroPerl.create({
-      stdout: (data) => {
-        const text = typeof data === 'string' ? data : new TextDecoder().decode(data);
-        output.innerHTML += text.replace(/\n/g, '<br>');
-      }
-    });
-
-    await perl.eval(`
-      $| = 1;
-      print "Hello from Perl!\\n";
-      print "Running in: $^O\\n";
-    `);
-
-    perl.dispose();
-  </script>
-</body>
-</html>
-```
+The `fetch` option may also return another supported ZeroPerl artifact when an
+application deliberately selects a different Perl release.
 
 ## API Reference
 
@@ -507,6 +443,7 @@ Create a new Perl interpreter instance.
 - `stdout` - stdout callback ((data: string | Uint8Array) => void)
 - `stderr` - stderr callback ((data: string | Uint8Array) => void)
 - `fetch` - Custom fetch for WASM loading
+- `wasmModule` - Precompiled WebAssembly module for hosts that import WASM directly
 
 ```typescript
 const perl = await ZeroPerl.create({
@@ -605,6 +542,9 @@ perl.registerMethod('Math', 'square', (x) => {
 ### `perl.call(name, args, context?)`
 
 Call a Perl function. Context can be `"void"`, `"scalar"`, or `"list"`.
+Perl exceptions preserve the existing empty-result return convention; inspect
+`perl.getLastError()` immediately after the call before clearing it. A fulfilled
+call promise alone does not prove the Perl subroutine succeeded.
 
 ```typescript
 const result = await perl.call('my_sub', [arg1, arg2], 'scalar');
@@ -623,7 +563,9 @@ perl.flush();
 
 ### `perl.reset()`
 
-Reset interpreter to clean state. Clears all variables.
+Reset interpreter to clean state. Clears variables and Perl host-function
+registrations; re-register callbacks afterwards. Dispose owned Perl values
+before resetting and do not reuse wrappers from the previous interpreter.
 
 ```typescript
 await perl.reset();
@@ -648,12 +590,17 @@ const ready = perl.isInitialized() && perl.canEvaluate();
 
 ### `perl.dispose()`, `perl.shutdown()`
 
-Free resources. Use `dispose()` for normal cleanup, `shutdown()` for complete termination.
+Free resources. Use `dispose()` for normal cleanup and `shutdown()` for complete
+termination. Both methods use a synchronous fast path when cleanup does not
+suspend. If a Perl destructor or `END` block calls an asynchronous registered
+JavaScript function, they return a promise and finish only after that callback.
+Using `await` is therefore the safest form and does not force asynchronous work
+onto the normal path.
 
 ```typescript
-perl.dispose();
+await perl.dispose();
 // or
-perl.shutdown();
+await perl.shutdown();
 ```
 
 ### PerlValue Methods
@@ -702,7 +649,7 @@ perl.shutdown();
 ### Processing JSON
 
 ```typescript
-import { ZeroPerl, MemoryFileSystem } from '@6over3/zeroperl-ts';
+import { ZeroPerl, MemoryFileSystem } from '@aspeer/zeroperl-ts';
 
 const fs = new MemoryFileSystem({ "/": "" });
 fs.addFile("/data.json", JSON.stringify({ users: ['Alice', 'Bob'] }));
@@ -710,17 +657,17 @@ fs.addFile("/process.pl", `
   $| = 1;
   use strict;
   use warnings;
-
+  
   open my $fh, '<', '/data.json' or die $!;
   my $json = do { local $/; <$fh> };
   close $fh;
-
+  
   print "Processing: $json\\n";
 `);
 
 const perl = await ZeroPerl.create({ fileSystem: fs });
 await perl.runFile('/process.pl');
-perl.dispose();
+await perl.dispose();
 ```
 
 ### Interactive REPL
@@ -737,7 +684,7 @@ await perl.eval('print "$x\\n"');
 await perl.eval('$x *= 2');
 await perl.eval('print "$x\\n"');
 
-perl.dispose();
+await perl.dispose();
 ```
 
 ### Complex Data Structures
@@ -760,7 +707,7 @@ await perl.eval(`
   print "Features: @{$config->{features}}\\n";
 `);
 
-perl.dispose();
+await perl.dispose();
 ```
 
 ## Development
@@ -778,3 +725,29 @@ Apache-2.0
 ## About
 
 ZeroPerl compiles Perl 5 to WebAssembly using a WASI-compliant implementation. This package provides a TypeScript/JavaScript API for the [ZeroPerl](https://github.com/6over3/zeroperl) WASM module.
+
+
+## Compatibility notes
+
+- `toPerlValue()` preserves large JavaScript numbers through the double ABI
+  instead of truncating them to 32 bits. `createInt()` and `createUInt()` remain
+  explicit 32-bit APIs; BigInt is not supported.
+- Await disposal, clear, delete, array/hash `set()`, and `setVariable()` operations when Perl destructors may call
+  asynchronous host functions. Serialize interpreter entry; do not overlap
+  evaluations on one instance. Dispose owned values before the interpreter.
+- Host callback arguments are borrowed until the callback completes (including
+  an awaited callback). Returning an argument is supported. Do not retain,
+  dispose, or reference-count the borrowed wrapper; later access throws.
+  Returning an owned `PerlValue` transfers its ownership to Perl and invalidates
+  that JavaScript wrapper. Values from another interpreter are rejected, including values passed to
+  setters or `call()`.
+- Direct bridge getters, conversions, and collection operations support ordinary
+  Perl values. Tied variables/collections and overloaded values that invoke Perl
+  magic are outside this API contract; operate on them through `eval()` or
+  `call()`, where the interpreter can handle asynchronous callbacks.
+- The memory filesystem implements a subset of WASI. Native operating-system
+  APIs, processes, sockets, symlinks, and complete descriptor rights semantics
+  are not provided. It is not a general-purpose host filesystem adapter.
+- The bridge license and attribution are included in `LICENSE` and `NOTICE`.
+  The bundled Perl binary and embedded CPAN modules retain their own licenses;
+  the matching build supplies `dist/third-party-notices.tar.gz`. The inventory records the attribution evidence supplied with the runtime.

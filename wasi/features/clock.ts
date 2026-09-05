@@ -1,5 +1,5 @@
-import { WASIAbi } from "../abi";
-import type { WASIOptions } from "../options";
+import { WASIAbi } from "../abi.js";
+import type { WASIOptions } from "../options.js";
 
 /**
  * A feature provider that provides `clock_res_get` and `clock_time_get` by JavaScript's Date.
@@ -15,14 +15,14 @@ export function useClock(_options: WASIOptions, _abi: WASIAbi, memoryView: () =>
                     break;
                 }
                 case WASIAbi.WASI_CLOCK_REALTIME: {
-                    resolutionValue = 1000;
+                    resolutionValue = 1_000_000;
                     break;
                 }
                 default: return WASIAbi.WASI_ENOSYS;
             }
             const view = memoryView();
-            // 64-bit integer, but only the lower 32 bits are used.
-            view.setUint32(resolution, resolutionValue, true);
+            // WASI timestamps occupy eight bytes, including the high word.
+            view.setBigUint64(resolution, BigInt(resolutionValue), true);
             return WASIAbi.WASI_ESUCCESS;
         },
         clock_time_get: (clockId: number, _precision: number, time: number) => {

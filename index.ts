@@ -7,13 +7,13 @@ import {
     useRandom,
     WASI,
     WASIProcExit,
-} from "./wasi";
-import { instantiate } from "./wasi/asyncify";
-import { MemoryFileSystem } from "./wasi/features/fd";
-import type { WASIOptions } from "./wasi/options";
+} from "./wasi/index.js";
+import { instantiate } from "./wasi/asyncify.js";
+import { MemoryFileSystem } from "./wasi/features/fd.js";
+import type { WASIOptions } from "./wasi/options.js";
 import zeroperl from "./zeroperl.wasm";
 
-export { MemoryFileSystem } from "./wasi/features/fd";
+export { MemoryFileSystem } from "./wasi/features/fd.js";
 
 /**
  * @fileoverview zeroperl-ts.
@@ -89,6 +89,24 @@ export type PerlConvertible =
 export type JSPrimitive = string | number | boolean | null | undefined;
 export type MaybePromise<T> = T | Promise<T>;
 
+function finishMutation(operation: () => MaybePromise<number>, cleanup: () => MaybePromise<void>, message: string): MaybePromise<void> {
+    const check = (success: number) => {
+        if (!success) throw new ZeroPerlError(message);
+    };
+    let result: MaybePromise<number>;
+    try {
+        result = operation();
+    } catch (error) {
+        const released = cleanup();
+        if (isPromiseLike(released)) return Promise.resolve(released).then(() => { throw error; });
+        throw error;
+    }
+    if (isPromiseLike(result)) return Promise.resolve(result).then(check).finally(cleanup);
+    const released = cleanup();
+    if (isPromiseLike(released)) return Promise.resolve(released).then(() => check(result as number));
+    check(result);
+}
+
 // Synchronous exports (don't trigger asyncjmp_rt_start)
 interface ZeroPerlSyncExports {
     memory: WebAssembly.Memory;
@@ -125,7 +143,7 @@ interface ZeroPerlSyncExports {
     zeroperl_array_push: (arr: number, val: number) => void;
     zeroperl_array_pop: (arr: number) => number;
     zeroperl_array_get: (arr: number, idx: number) => number;
-    zeroperl_array_set: (arr: number, idx: number, val: number) => number;
+    zeroperl_array_set: (arr: number, idx: number, val: number) => MaybePromise<number>;
     zeroperl_array_length: (arr: number) => number;
     zeroperl_array_clear: (arr: number) => MaybePromise<void>;
     zeroperl_array_to_value: (arr: number) => number;
@@ -133,7 +151,7 @@ interface ZeroPerlSyncExports {
     zeroperl_array_free: (arr: number) => MaybePromise<void>;
 
     zeroperl_new_hash: () => number;
-    zeroperl_hash_set: (h: number, k: number, v: number) => number;
+    zeroperl_hash_set: (h: number, k: number, v: number) => MaybePromise<number>;
     zeroperl_hash_get: (h: number, k: number) => number;
     zeroperl_hash_exists: (h: number, k: number) => number;
     zeroperl_hash_delete: (h: number, k: number) => MaybePromise<number>;
@@ -152,7 +170,7 @@ interface ZeroPerlSyncExports {
     zeroperl_get_var: (name: number) => number;
     zeroperl_get_array_var: (name: number) => number;
     zeroperl_get_hash_var: (name: number) => number;
-    zeroperl_set_var: (name: number, val: number) => number;
+    zeroperl_set_var: (name: number, val: number) => MaybePromise<number>;
 
     zeroperl_register_function: (id: number, name: number) => void;
     zeroperl_register_method: (id: number, pkg: number, meth: number) => void;
@@ -185,15 +203,15 @@ const SYNC_EXPORTS: string[] = [
     "zeroperl_to_int", "zeroperl_to_double", "zeroperl_to_string", "zeroperl_to_bool",
     "zeroperl_is_undef", "zeroperl_get_type", "zeroperl_incref",
     "zeroperl_new_array", "zeroperl_array_push",
-    "zeroperl_array_pop", "zeroperl_array_get", "zeroperl_array_set",
+    "zeroperl_array_pop", "zeroperl_array_get",
     "zeroperl_array_length", "zeroperl_array_to_value",
     "zeroperl_value_to_array", "zeroperl_new_hash",
-    "zeroperl_hash_set", "zeroperl_hash_get", "zeroperl_hash_exists",
+    "zeroperl_hash_get", "zeroperl_hash_exists",
     "zeroperl_hash_iter_new",
     "zeroperl_hash_iter_next", "zeroperl_hash_iter_free", "zeroperl_hash_to_value",
     "zeroperl_value_to_hash", "zeroperl_new_ref",
     "zeroperl_deref", "zeroperl_is_ref", "zeroperl_get_var", "zeroperl_get_array_var",
-    "zeroperl_get_hash_var", "zeroperl_set_var", "zeroperl_register_function",
+    "zeroperl_get_hash_var", "zeroperl_register_function",
     "zeroperl_register_method", "zeroperl_result_get",
     "zeroperl_set_host_error", "zeroperl_get_host_error", "zeroperl_clear_host_error",
 ];
@@ -251,7 +269,7 @@ function isPromiseLike<T>(value: MaybePromise<T>): value is Promise<T> {
 let wasmSourceCache: WeakRef<ArrayBuffer> | null = null;
 
 function isBrowser(): boolean {
-    return typeof window !== "undefined" && typeof document !== "undefined";
+    return typeof location !== "undefined" && /^https?:$/.test(location.protocol);
 }
 
 async function loadWasmSource(fetchFn?: FetchLike): Promise<ArrayBuffer> {
@@ -266,23 +284,26 @@ async function loadWasmSource(fetchFn?: FetchLike): Promise<ArrayBuffer> {
     if (fetchFn) {
         // Custom fetch takes precedence in ALL environments
         const response = await fetchFn(zeroperl);
+        if (!response.ok) throw new ZeroPerlError(`WASM fetch failed: ${response.status} ${response.statusText}`);
         moduleData = await response.arrayBuffer();
     } else if (isBrowser()) {
         const response = await fetch(zeroperl);
+        if (!response.ok) throw new ZeroPerlError(`WASM fetch failed: ${response.status} ${response.statusText}`);
         moduleData = await response.arrayBuffer();
     } else {
         const wasmUrl = new URL(zeroperl, import.meta.url);
-        const wasmPath = wasmUrl.pathname;
+        const wasmPath = decodeURIComponent(wasmUrl.pathname);
 
         //@ts-expect-error Deno
         if (typeof Deno !== "undefined") {
             //@ts-expect-error Deno
-            moduleData = (await Deno.readFile(wasmPath)).buffer;
+            moduleData = (await Deno.readFile(wasmUrl)).slice().buffer;
         } else if (typeof Bun !== "undefined") {
             moduleData = await Bun.file(wasmPath).arrayBuffer();
         } else {
             const { readFile } = await import("node:fs/promises");
-            moduleData = (await readFile(wasmPath)).buffer;
+            const bytes = await readFile(wasmUrl);
+            moduleData = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
         }
     }
 
@@ -309,7 +330,7 @@ function mapContext(context: PerlContext): number {
  * Wrapper for Perl scalar values.
  *
  * Represents any Perl scalar value (integers, floats, strings, references, etc).
- * All operations are synchronous.
+ * Cleanup can return a promise when Perl destruction suspends.
  *
  * Memory must be explicitly freed by calling dispose().
  *
@@ -329,15 +350,33 @@ export class PerlValue {
     private disposed = false;
 
     /** @internal */
-    constructor(ptr: number, exports: ZeroPerlExports) {
+    constructor(ptr: number, exports: ZeroPerlExports, private borrowed = false) {
         this.ptr = ptr;
         this.exports = exports;
     }
 
     /** @internal */
-    getPtr(): number {
+    getPtr(exports: ZeroPerlExports = this.exports): number {
         this.checkDisposed();
+        if (this.exports !== exports) throw new ZeroPerlError("Cannot use a value from another interpreter");
         return this.ptr;
+    }
+
+    /** @internal Transfer an owned handle, or return a borrowed callback argument. */
+    transferToHost(exports: ZeroPerlExports): number {
+        this.getPtr(exports);
+        if (!this.borrowed) this.disposed = true;
+        return this.ptr;
+    }
+
+    /** @internal */
+    invalidateBorrowed(): void {
+        if (this.borrowed) this.disposed = true;
+    }
+
+    private checkOwned(): void {
+        this.checkDisposed();
+        if (this.borrowed) throw new ZeroPerlError("Callback arguments are borrowed; they cannot be released or reference-counted");
     }
 
     /**
@@ -460,19 +499,20 @@ export class PerlValue {
 
     /** Increment the reference count. */
     incref(): void {
-        this.checkDisposed();
+        this.checkOwned();
         this.exports.zeroperl_incref(this.ptr);
     }
 
     /** Decrement the reference count. Await if destruction can call an asynchronous host function. */
     decref(): MaybePromise<void> {
-        this.checkDisposed();
+        this.checkOwned();
         return this.exports.zeroperl_decref(this.ptr);
     }
 
     /** Free this value. Await if destruction can call an asynchronous host function. */
     dispose(): MaybePromise<void> {
         if (this.disposed) return;
+        this.checkOwned();
         const released = this.exports.zeroperl_value_free(this.ptr);
         this.disposed = true;
         return released;
@@ -487,7 +527,7 @@ export class PerlValue {
  * Wrapper for Perl arrays.
  *
  * Provides push/pop operations, indexing, iteration, and conversion
- * to/from JavaScript arrays. All operations are synchronous.
+ * to/from JavaScript arrays. Cleanup can return a promise when Perl destruction suspends.
  *
  * Memory must be explicitly freed by calling dispose().
  *
@@ -524,7 +564,7 @@ export class PerlArray {
         this.checkDisposed();
         const perlValue = this.perl.toPerlValue(value);
         try {
-            this.exports.zeroperl_array_push(this.ptr, perlValue.getPtr());
+            this.exports.zeroperl_array_push(this.ptr, perlValue.getPtr(this.exports));
         } finally {
             if (!(value instanceof PerlValue)) perlValue.dispose();
         }
@@ -545,19 +585,17 @@ export class PerlArray {
     }
 
     /**
-     * Set a value at the specified index.
+     * Set a value at the specified index. Await if replacement may invoke asynchronous DESTROY.
      * @throws {ZeroPerlError} If index is invalid
      */
-    set(index: number, value: PerlConvertible): void {
+    set(index: number, value: PerlConvertible): MaybePromise<void> {
         this.checkDisposed();
         const perlValue = this.perl.toPerlValue(value);
-        try {
-            if (!this.exports.zeroperl_array_set(this.ptr, index, perlValue.getPtr())) {
-                throw new ZeroPerlError(`Failed to set array element at index ${index}`);
-            }
-        } finally {
-            if (!(value instanceof PerlValue)) perlValue.dispose();
-        }
+        return finishMutation(
+            () => this.exports.zeroperl_array_set(this.ptr, index, perlValue.getPtr(this.exports)),
+            () => value instanceof PerlValue ? undefined : perlValue.dispose(),
+            `Failed to set array element at index ${index}`,
+        );
     }
 
     /** Get the length of the array. */
@@ -603,7 +641,7 @@ export class PerlArray {
     /** @internal */
     static fromValue(value: PerlValue, perl: ZeroPerl): PerlArray | null {
         const exports = (value as unknown as { exports: ZeroPerlExports }).exports;
-        const arrPtr = exports.zeroperl_value_to_array(value.getPtr());
+        const arrPtr = exports.zeroperl_value_to_array(value.getPtr(exports));
         return arrPtr === 0 ? null : new PerlArray(arrPtr, exports, perl);
     }
 
@@ -633,7 +671,7 @@ export class PerlArray {
  * Wrapper for Perl hashes.
  *
  * Provides a Map-like interface with iteration methods and conversion
- * to/from JavaScript objects. All operations are synchronous.
+ * to/from JavaScript objects. Cleanup can return a promise when Perl destruction suspends.
  *
  * Memory must be explicitly freed by calling dispose().
  *
@@ -665,21 +703,21 @@ export class PerlHash {
     }
 
     /**
-     * Set a key-value pair in the hash.
+     * Set a key-value pair in the hash. Await if replacement may invoke asynchronous DESTROY.
      * @throws {ZeroPerlError} If setting the key fails
      */
-    set(key: string, value: PerlConvertible): void {
+    set(key: string, value: PerlConvertible): MaybePromise<void> {
         this.checkDisposed();
         const perlValue = this.perl.toPerlValue(value);
         const keyPtr = this.writeCString(key);
-        try {
-            if (!this.exports.zeroperl_hash_set(this.ptr, keyPtr, perlValue.getPtr())) {
-                throw new ZeroPerlError(`Failed to set hash key '${key}'`);
-            }
-        } finally {
-            this.exports.free(keyPtr);
-            if (!(value instanceof PerlValue)) perlValue.dispose();
-        }
+        return finishMutation(
+            () => this.exports.zeroperl_hash_set(this.ptr, keyPtr, perlValue.getPtr(this.exports)),
+            () => {
+                this.exports.free(keyPtr);
+                return value instanceof PerlValue ? undefined : perlValue.dispose();
+            },
+            `Failed to set hash key '${key}'`,
+        );
     }
 
     /** Get a value by key. Returns null if key doesn't exist. */
@@ -741,7 +779,9 @@ export class PerlHash {
         this.checkDisposed();
         const result: Record<string, JSPrimitive> = {};
         for (const [key, val] of this.entries()) {
-            result[key] = val.project();
+            Object.defineProperty(result, key, {
+                value: val.project(), enumerable: true, writable: true, configurable: true,
+            });
             val.dispose();
         }
         return result;
@@ -750,7 +790,7 @@ export class PerlHash {
     /** @internal */
     static fromValue(value: PerlValue, perl: ZeroPerl): PerlHash | null {
         const exports = (value as unknown as { exports: ZeroPerlExports }).exports;
-        const hashPtr = exports.zeroperl_value_to_hash(value.getPtr());
+        const hashPtr = exports.zeroperl_value_to_hash(value.getPtr(exports));
         return hashPtr === 0 ? null : new PerlHash(hashPtr, exports, perl);
     }
 
@@ -896,7 +936,7 @@ export class ZeroPerl {
     }
 
     private handleHostResult(result: PerlValue | void): number {
-        if (result instanceof PerlValue) return result.getPtr();
+        if (result instanceof PerlValue) return result.transferToHost(this.exports);
 
         const undefPtr = this.exports.zeroperl_new_undef();
         if (undefPtr === 0) {
@@ -913,32 +953,36 @@ export class ZeroPerl {
             return 0;
         }
 
+        const args: PerlValue[] = [];
+        const invalidate = () => args.forEach(arg => arg.invalidateBorrowed());
+        let pending = false;
         try {
-
-            const args: PerlValue[] = [];
             if (argc > 0) {
                 const view = new DataView(this.exports.memory.buffer);
                 for (let i = 0; i < argc; i++) {
                     const valPtr = view.getUint32(argvPtr + i * 4, true);
                     if (valPtr !== 0) {
-                        args.push(new PerlValue(valPtr, this.exports));
+                        args.push(new PerlValue(valPtr, this.exports, true));
                     }
                 }
             }
             const result = func(...args);
             if (isPromiseLike(result)) {
-                return result
+                pending = true;
+                return Promise.resolve(result)
                     .then((value) => this.handleHostResult(value))
                     .catch((error) => {
                         this.setHostError(error instanceof Error ? error.message : String(error));
                         return 0;
-                    });
+                    }).finally(invalidate);
             }
             return this.handleHostResult(result);
 
         } catch (error) {
             this.setHostError(error instanceof Error ? error.message : String(error));
             return 0;
+        } finally {
+            if (!pending) invalidate();
         }
     }
 
@@ -1072,11 +1116,15 @@ export class ZeroPerl {
      * @throws {ZeroPerlError} If conversion fails
      */
     toPerlValue(value: PerlConvertible): PerlValue {
-        if (value instanceof PerlValue) return value;
+        if (value instanceof PerlValue) {
+            value.getPtr(this.exports);
+            return value;
+        }
         if (value === null || value === undefined) return this.createUndef();
         if (typeof value === 'boolean') return this.createBool(value);
         if (typeof value === 'number') {
-            return Number.isInteger(value) ? this.createInt(value) : this.createDouble(value);
+            return Number.isInteger(value) && value >= -2147483648 && value <= 2147483647
+                ? this.createInt(value) : this.createDouble(value);
         }
         if (typeof value === 'string') return this.createString(value);
         if (Array.isArray(value)) {
@@ -1131,21 +1179,21 @@ export class ZeroPerl {
     }
 
     /**
-     * Set a global scalar variable.
+     * Set a global scalar variable. Await if replacement may invoke asynchronous DESTROY.
      * @throws {ZeroPerlError} If setting the variable fails
      */
-    setVariable(name: string, value: PerlConvertible): void {
+    setVariable(name: string, value: PerlConvertible): MaybePromise<void> {
         this.checkDisposed();
         const perlValue = this.toPerlValue(value);
         const namePtr = this.writeCString(name);
-        try {
-            if (!this.exports.zeroperl_set_var(namePtr, perlValue.getPtr())) {
-                throw new ZeroPerlError(`Failed to set variable '${name}'`);
-            }
-        } finally {
-            this.exports.free(namePtr);
-            if (!(value instanceof PerlValue)) perlValue.dispose();
-        }
+        return finishMutation(
+            () => this.exports.zeroperl_set_var(namePtr, perlValue.getPtr(this.exports)),
+            () => {
+                this.exports.free(namePtr);
+                return value instanceof PerlValue ? undefined : perlValue.dispose();
+            },
+            `Failed to set variable '${name}'`,
+        );
     }
 
     /**
@@ -1216,6 +1264,11 @@ export class ZeroPerl {
     ): Promise<undefined | PerlValue | null | PerlValue[]> {
         this.checkDisposed();
 
+        const argumentPointers = args.map((arg, index) => {
+            if (!arg) throw new ZeroPerlError(`Argument at index ${index} is undefined`);
+            return arg.getPtr(this.exports);
+        });
+
         const namePtr = this.writeCString(name);
         const contextNum = mapContext(context);
         let argvPtr = 0;
@@ -1224,9 +1277,7 @@ export class ZeroPerl {
             argvPtr = this.exports.malloc(args.length * 4);
             const view = new DataView(this.exports.memory.buffer);
             for (let i = 0; i < args.length; i++) {
-                const arg = args[i];
-                if (!arg) throw new ZeroPerlError(`Argument at index ${i} is undefined`);
-                view.setUint32(argvPtr + i * 4, arg.getPtr(), true);
+                view.setUint32(argvPtr + i * 4, argumentPointers[i]!, true);
             }
         }
 
@@ -1349,7 +1400,7 @@ export class ZeroPerl {
 
     /**
      * Reset the interpreter to a clean state.
-     * Clears all variables and errors. Registered host functions remain.
+     * Clears variables and errors. Re-register host functions after reset.
      * @throws {ZeroPerlError} If reset fails
      */
     async reset(): Promise<void> {
@@ -1418,9 +1469,6 @@ export class ZeroPerl {
     }
 
     private writeCString(str: string): number {
-        if (!str) {
-            return 0;
-        }
         const bytes = textEncoder.encode(`${str}\0`);
         const ptr = this.exports.malloc(bytes.length);
         new Uint8Array(this.exports.memory.buffer).set(bytes, ptr);
@@ -1438,14 +1486,13 @@ export class ZeroPerl {
     private writeStringArray(args: string[]): { argv: number; buffers: number[] } {
         const buffers: number[] = [];
         const argv = this.exports.malloc(args.length * 4);
-        const argvView = new DataView(this.exports.memory.buffer);
 
         for (let i = 0; i < args.length; i++) {
             const arg = args[i];
             if (arg === undefined) throw new ZeroPerlError(`Argument at index ${i} is undefined`);
             const strPtr = this.writeCString(arg);
             buffers.push(strPtr);
-            argvView.setUint32(argv + i * 4, strPtr, true);
+            new DataView(this.exports.memory.buffer).setUint32(argv + i * 4, strPtr, true);
         }
 
         return { argv, buffers };

@@ -72,6 +72,7 @@ function proxyGet<T extends object>(obj: T, transform: (value: unknown) => unkno
 
 class Asyncify {
 	private value: unknown = undefined;
+	private suspendedStackPointer: number | undefined;
 	private exports: AsyncifyExports | null = null;
 	private unwrappedExports: Set<string>;
 
@@ -107,6 +108,8 @@ class Asyncify {
 				return value;
 			}
 			if (!this.exports) throw new Error("Exports not initialized");
+			// C frames remain live while Asyncify saves the WASM locals.
+			this.suspendedStackPointer = this.exports.__stack_pointer?.value as number | undefined;
 			this.exports.asyncify_start_unwind(DATA_ADDR);
 			this.value = value;
 		};
@@ -157,10 +160,20 @@ class Asyncify {
 		while (this.getState() === State.Unwinding) {
 			if (!this.exports) throw new Error("Exports not initialized");
 			this.exports.asyncify_stop_unwind();
-			this.value = await (this.value as Promise<unknown>);
-			this.assertNoneState();
-			this.exports.asyncify_start_rewind(DATA_ADDR);
-			result = fn(...args);
+			// Re-entering fn to rewind can write C arguments before its saved
+			// locals are restored. Keep that setup (and host allocations while
+			// awaiting) below the suspended frames until rewind has finished.
+			const stack = this.exports.__stack_pointer;
+			const rootStackPointer = stack?.value;
+			if (stack && this.suspendedStackPointer !== undefined) stack.value = this.suspendedStackPointer;
+			try {
+				this.value = await (this.value as Promise<unknown>);
+				this.assertNoneState();
+				this.exports.asyncify_start_rewind(DATA_ADDR);
+				result = fn(...args);
+			} finally {
+				if (stack && rootStackPointer !== undefined) stack.value = rootStackPointer;
+			}
 		}
 		this.assertNoneState();
 		return result;

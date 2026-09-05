@@ -1,5 +1,5 @@
-import { WASIAbi } from "../abi";
-import type { WASIOptions } from "../options";
+import { WASIAbi } from "../abi.js";
+import type { WASIOptions } from "../options.js";
 
 /**
  * A feature provider that provides `args_get` and `args_sizes_get`

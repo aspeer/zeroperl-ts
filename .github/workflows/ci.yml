@@ -20,7 +20,7 @@ jobs:
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: '1.3.14'
+          bun-version: '1.4.0'
 
       - name: Install dependencies
         run: npm ci
@@ -31,8 +31,11 @@ jobs:
       - name: Build distributions
         run: npm run build
 
+      - name: Verify callback ownership and asynchronous replacements
+        run: npm run test:lifecycle
+
       - name: Verify package contents
-        run: npm pack --dry-run
+        run: npm run pack:check
 
       - name: Verify generated outputs are current
         run: git diff --exit-code

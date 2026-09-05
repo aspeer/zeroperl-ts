@@ -1,14 +1,15 @@
 {
   "name": "@aspeer/zeroperl-ts",
   "version": "1.1.0",
-  "private": true,
   "description": "Perl 5 interpreter powered by WebAssembly for JavaScript runtimes",
   "scripts": {
+    "test:lifecycle": "node tools/check-runtime-lifecycle.mjs",
     "build": "npm run build:esm && npm run build:cjs && bun build.ts",
     "build:esm": "tsc --emitDeclarationOnly -p tsconfig.esm.json",
     "build:cjs": "tsc --emitDeclarationOnly -p tsconfig.cjs.json",
     "test": "bun test",
-    "smoke:external-runtime": "node tools/smoke-external-runtime.mjs"
+    "smoke:external-runtime": "node tools/smoke-external-runtime.mjs",
+    "pack:check": "node tools/check-package.mjs"
   },
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/esm/index.js",
@@ -68,13 +69,16 @@
   ],
   "author": "6over3",
   "contributors": [
-    "Anthony Speer"
+    "Andrew Speer"
   ],
   "license": "Apache-2.0",
   "type": "module",
   "types": "dist/esm/types/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "NOTICE",
+    "USAGE.md",
+    "WEBDYNE.md"
   ],
   "homepage": "https://github.com/aspeer/zeroperl-ts#readme",
   "repository": {
@@ -87,5 +91,8 @@
   "devDependencies": {
     "@types/bun": "^1.3.2",
     "typescript": "^5.7.3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

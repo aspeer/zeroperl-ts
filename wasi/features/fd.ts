@@ -1,5 +1,5 @@
-import { WASIAbi } from "../abi";
-import type { WASIFeatureProvider, WASIOptions } from "../options";
+import { WASIAbi } from "../abi.js";
+import type { WASIFeatureProvider, WASIOptions } from "../options.js";
 
 interface FdEntry {
   writev(iovs: Uint8Array[]): number;
@@ -26,7 +26,7 @@ class WritableTextProxy implements FdEntry {
     if (this.outputBuffers) {
       this.handler(concatBuffer);
     } else {
-      const lines = this.decoder.decode(concatBuffer);
+      const lines = this.decoder.decode(concatBuffer, { stream: true });
       this.handler(lines);
     }
 
@@ -35,7 +35,12 @@ class WritableTextProxy implements FdEntry {
   readv(_iovs: Uint8Array[]): number {
     return 0;
   }
-  close(): void { }
+  close(): void {
+    if (!this.outputBuffers) {
+      const tail = this.decoder.decode();
+      if (tail) this.handler(tail);
+    }
+  }
 }
 
 export class ReadableTextProxy implements FdEntry {
@@ -250,7 +255,7 @@ export class MemoryFileSystem {
    * @param preopens Optional list of directories to pre-open
    */
   constructor(preopens?: { [guestPath: string]: string } | undefined) {
-    this.root = { type: "dir", entries: {} };
+    this.root = { type: "dir", entries: Object.create(null) };
 
     // Setup essential directories and special files
     this.ensureDir("/dev");
@@ -401,7 +406,7 @@ export class MemoryFileSystem {
 
     for (const part of parts) {
       if (!current.entries[part]) {
-        current.entries[part] = { type: "dir", entries: {} };
+        current.entries[part] = { type: "dir", entries: Object.create(null) };
       }
 
       const next = current.entries[part];
@@ -437,7 +442,7 @@ export class MemoryFileSystem {
 
     for (const part of parts) {
       if (!current.entries[part]) {
-        current.entries[part] = { type: "dir", entries: {} };
+        current.entries[part] = { type: "dir", entries: Object.create(null) };
       }
 
       const next = current.entries[part];

@@ -9,4 +9,29 @@
 - [x] Add first-class `WebAssembly.Module` loading for Worker runtimes.
 - [x] Integrate the canonical local package with the Worker and browser hosts.
 
-Publication is intentionally disabled. Pushes require separate approval.
+Public npm packaging is now requested. Pushes and publication require separate approval.
+
+
+## First release review (2026-09-05)
+
+Release-review branch: `codex/first-release-review`, based on `d471917`.
+No main branch exists on the configured TypeScript remote; create it only after
+release gates and a separately approved merge.
+
+- [x] Repair numeric conversion, prototype keys, WASM loading paths, UTF-8 output,
+  random_get chunking, clock result layout, and declaration resolution.
+- [x] Build and validate the actual npm tarball with Node ESM/CJS and NodeNext.
+- [x] Replace local-only installation documentation with npm instructions.
+- [x] Resolve C host callback ownership and async replacement defects.
+- [x] Qualify rebuilt binaries and preserve checked attribution evidence.
+- [ ] Finalize public source access and release source refs.
+
+See RELEASE-REVIEW.md and BACKLOG.md for remaining findings.
+
+## Runtime blocker fixes (authorized 2026-09-05)
+
+- [x] Define borrowed callback arguments and ownership transfer of returned values.
+- [x] Retain mutation resources until asynchronous replacement completes.
+- [x] Qualify callback identity, transfer, rejection and replacement regressions with rebuilt WASM.
+- [x] Refresh bundled artifacts and generated code; verify packed consumers.
+- [x] Reconcile artifact inventory and attribution. No publishing or merging.

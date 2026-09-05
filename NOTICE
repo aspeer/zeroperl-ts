@@ -1,0 +1,13 @@
+zeroperl-ts
+
+Derived from the zeroperl-ts project by 6over3 and subsequent fork contributions.
+The WASI/Asyncify implementation includes code bearing:
+Copyright 2019 Google Inc. All Rights Reserved.
+
+This package also distributes a Perl WebAssembly binary built with ZeroPerl.
+The interpreter and its embedded Perl/CPAN modules retain their respective
+licenses. The Apache-2.0 license for the TypeScript bridge does not replace
+those upstream licenses. The matching runtime manifest and attribution evidence archive are included
+under dist, along with the runtime's MIT source license. The evidence archive
+includes build-only dependencies; its coverage and scope need final review
+before publication. It does not replace upstream license terms.
