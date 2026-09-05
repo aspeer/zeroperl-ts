@@ -47,3 +47,12 @@ Re-entering the export to rewind can set up C arguments before saved WASM
 locals are restored, overwriting an older Perl JMPENV near the root stack.
 Keep the pointer below suspended frames until the rewind call returns, then
 restore the root pointer. Rejected callbacks are part of the release matrix.
+
+## Keep generated runtime artifacts outside Git
+
+The bridge repository tracks its canonical TypeScript source, runtime manifest
+and license files. The owning `aspeer/zeroperl` build supplies versioned WASM
+and attribution artifacts. `runtime:prepare` imports both with size and SHA-256
+verification; generated distributions remain local. Standalone npm package
+contents remain unchanged. GitHub CI obtains artifacts from the configured
+`ZEROPERL_ARTIFACT_BASE_URL`; runtime publication is a separate maintainer step.

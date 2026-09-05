@@ -19,3 +19,10 @@ See RELEASE-REVIEW.md for evidence and the publication checklist.
 
 - [ ] Resolve the runtime repository's mixed SSE/WebSocket memory fault before
   publishing this bundled runtime. See its release review and reproducer.
+
+- Host the manifest-matched WASM and notices artifacts from `aspeer/zeroperl`
+  and configure the bridge repository's `ZEROPERL_ARTIFACT_BASE_URL` Actions
+  variable. Fresh-checkout CI requires these external artifacts.
+- Separately approve and perform backed-up Git history cleanup to remove old
+  `dist/`, `zeroperl.wasm` and `third-party-notices.tar.gz` objects from remote
+  history; ordinary removal commits do not reclaim historical storage.

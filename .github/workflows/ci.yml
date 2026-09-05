@@ -25,6 +25,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Prepare matching runtime artifacts
+        env:
+          ZEROPERL_ARTIFACT_BASE_URL: ${{ vars.ZEROPERL_ARTIFACT_BASE_URL }}
+        run: npm run runtime:prepare
+
       - name: Test bridge
         run: bun test --timeout 30000
 
@@ -37,5 +42,5 @@ jobs:
       - name: Verify package contents
         run: npm run pack:check
 
-      - name: Verify generated outputs are current
+      - name: Verify tracked sources are unchanged
         run: git diff --exit-code

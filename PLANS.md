@@ -35,3 +35,10 @@ See RELEASE-REVIEW.md and BACKLOG.md for remaining findings.
 - [x] Qualify callback identity, transfer, rejection and replacement regressions with rebuilt WASM.
 - [x] Refresh bundled artifacts and generated code; verify packed consumers.
 - [x] Reconcile artifact inventory and attribution. No publishing or merging.
+
+## Compact source repository (2026-09-05)
+
+- [x] Remove generated distributions and runtime binaries from Git tracking.
+- [x] Add checksum-verified runtime preparation for local development and CI.
+- [ ] Host matching artifacts and configure the CI artifact base URL.
+- [ ] Back up and rewrite binary history, only with separate approval.

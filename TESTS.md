@@ -54,3 +54,15 @@ synchronous fast paths. CI runs this suite after building.
 `tools/check-package.mjs` exercises callback identity and asynchronous array
 replacement from both extracted ESM and CommonJS packages, and type-checks
 NodeNext consumers without skipLibCheck.
+
+## Source-only checkout validation (2026-09-05)
+
+- Standalone build/declaration checks, 160 Bun tests, 24 lifecycle checks and
+  installed npm ESM/CJS/NodeNext package checks passed using local build 1 artifacts.
+- Runtime preparation passed isolated checks for missing inputs, local import,
+  existing artifact verification, checksum rejection without replacing outputs,
+  and mocked HTTP success/404 responses. A real local HTTP listener was blocked
+  by the execution sandbox; hosted artifact retrieval remains to be verified.
+- The runtime repository's virtual WASM resolver builds from a temporary bridge
+  checkout containing no WASM or dist files; output matches its existing compiled
+  bridge byte for byte.

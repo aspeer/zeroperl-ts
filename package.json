@@ -9,7 +9,8 @@
     "build:cjs": "tsc --emitDeclarationOnly -p tsconfig.cjs.json",
     "test": "bun test",
     "smoke:external-runtime": "node tools/smoke-external-runtime.mjs",
-    "pack:check": "node tools/check-package.mjs"
+    "pack:check": "node tools/check-package.mjs",
+    "runtime:prepare": "node tools/prepare-runtime.mjs"
   },
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/esm/index.js",

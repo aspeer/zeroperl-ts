@@ -1,5 +1,40 @@
 # ZeroPerl TypeScript bridge — WebDyne integration fork
 
+## Working from source
+
+This repository tracks the TypeScript bridge, tests, licenses and runtime
+manifest. Generated `dist/`, `zeroperl.wasm` and `third-party-notices.tar.gz`
+are local build inputs/outputs and are not tracked by Git. The WebDyne runtime
+package built by `aspeer/zeroperl` includes its own compiled bridge and runtime;
+it does not require publication of this standalone npm package.
+
+To test or build the standalone package, install dependencies and import the
+matching artifacts produced by `aspeer/zeroperl`:
+
+```sh
+npm ci
+npm run runtime:prepare -- /path/to/runtime/artifacts
+npm test
+npm run build
+npm run pack:check
+```
+
+The directory must contain the versioned WASM and notices filenames recorded
+in `runtime-manifest.json`. Alternatively, pass an HTTP(S) base URL containing
+those files, or set `ZEROPERL_ARTIFACT_BASE_URL`. Both size and SHA-256 must
+match the tracked manifest. With no source argument or environment variable,
+`runtime:prepare` verifies existing local artifacts. It does not build Perl.
+
+For GitHub Actions, configure the repository Actions variable
+`ZEROPERL_ARTIFACT_BASE_URL` with a publicly readable directory or release-asset
+base URL containing the matching artifacts. CI cannot run runtime tests until
+those artifacts are hosted and the variable is configured.
+
+The standalone npm package still includes WASM and attribution when built;
+Git exclusions do not remove them from the published package. Update the
+manifest only when intentionally adopting a newly qualified runtime build.
+
+
 This is a fork of [6over3/zeroperl-ts](https://github.com/6over3/zeroperl-ts),
 the JavaScript/TypeScript bridge for the original
 [6over3/zeroperl](https://github.com/6over3/zeroperl) project. This fork supports
