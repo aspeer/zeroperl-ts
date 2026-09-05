@@ -1,5 +1,28 @@
 # First release review — 2026-09-05
 
+## Current qualification (2026-09-06)
+
+The bundled Perl 5.44.0 build 1 includes WebDyne 3.026. Its manifest pins clean
+runtime source `b08c545` and bridge implementation `7e91d2c`. Declaration/bundle
+builds, 160 Bun tests (266 assertions), 24 lifecycle checks, 100 Asyncify re-entry
+rounds and the 47-file installed npm ESM/CJS/NodeNext package check pass.
+
+The runtime also enables Cloudflare `enable_request_signal` so canceling a
+long-lived SSE response releases its session instead of blocking the persistent
+interpreter. Custom Wrangler configurations must enable the same flag. Earlier
+3.026 hosted stream tests passed; repeating hosted acceptance with the final
+rebuilt binary was blocked by automatic upload approval review. See the runtime
+repository's final qualification record for the exact local/hosted distinction.
+The maintainer accepts the independently reproduced abrupt-WebSocket-disconnect
+warning when subsequent clients remain healthy.
+
+Local main integration is authorized after final checks. Pushes and npm
+publication remain paused. Public artifact hosting, source accessibility and
+publisher configuration still need verification before publication. The older
+entries below preserve the investigation history and are superseded by this
+qualification where they describe previous artifacts or blockers.
+
+
 Preparation is on `codex/first-release-review`, from the latest implementation
 baseline `d471917`, as requested. No push, merge or publication has occurred.
 The existing package version `1.1.0` is retained; local runtime build numbers

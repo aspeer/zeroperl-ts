@@ -51,5 +51,14 @@ See RELEASE-REVIEW.md and BACKLOG.md for remaining findings.
 - [x] Regenerate the runtime bridge from the corrected TypeScript source.
 - [x] The runtime provider now retains all completions with waitUntil; local
   Perl 5.44 overlap acceptance passes.
-- [ ] Investigate forced WebSocket termination diagnostics and perform hosted
-  acceptance in the runtime repository. Publication is not approved.
+- [x] Isolate forced WebSocket termination diagnostics; the maintainer accepts
+  the upstream warning. Earlier hosted 3.026 stream acceptance passes.
+- [ ] Repeat hosted acceptance with the final rebuilt artifact when its upload
+  is approved; local final-package validation is recorded in the runtime repo.
+
+## WebDyne 3.026 release preparation
+
+- [x] Refresh the manifest from clean runtime source b08c545.
+- [x] Pass builds, 160 tests, 24 lifecycle checks, 100 Asyncify rounds and packed consumers.
+- [x] Complete the authorized local main integration after runtime acceptance.
+- [ ] Publish only after separate approval and public artifact/publisher setup.

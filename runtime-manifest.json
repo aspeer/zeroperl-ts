@@ -5,9 +5,9 @@
   "buildNumber": 1,
   "source": {
     "repository": "https://github.com/aspeer/zeroperl",
-    "revision": "e854b30bffd3be6bcf341207acdbc0f077326409",
+    "revision": "b08c545bb740d2093b8858a09be9e7a3a0b3cc04",
     "dirty": false,
-    "zeroperlTsRevision": "abaec75fad766e435ad6b8b4429ec2826347b207"
+    "zeroperlTsRevision": "7e91d2cfd3e2c42c3d5ecb97cf81d739f8d83a71"
   },
   "profile": {
     "shrink": "off",
@@ -17,29 +17,29 @@
   "artifacts": {
     "wasm": {
       "filename": "zeroperl-webdyne-5.44.0-1.wasm",
-      "bytes": 15309949,
-      "sha256": "61fa530b166f2a85dc3d85cea4f9b723cca46ffcc2441828d5af54ece5e71674"
+      "bytes": 14294179,
+      "sha256": "bd59be6cc0a4b0efbbad83ccdf34606b812e651acb4a256f30e1890034bbde61"
     },
     "reactor": {
       "filename": "zeroperl-webdyne-reactor-5.44.0-1.wasm",
-      "bytes": 13983052,
-      "sha256": "2cc041151ec8a2bb0f9a3a612255d17db26ebb52c0f93653f0d3bcae63926ed4"
+      "bytes": 12967260,
+      "sha256": "bcdcb9f1ca2aaa88cd5020a0ef709fcd0154fa7890ca45e1bba7e8cf777dbce3"
     },
     "notices": {
       "filename": "third-party-notices-5.44.0-1.tar.gz",
-      "bytes": 21705565,
-      "sha256": "317acd8ff8beeb6eb4cfc5c340fab9606347b63708b60ce9f13ee8e240fd0ddf"
+      "bytes": 21710924,
+      "sha256": "b90b00c5255d0ba323819cd9692ddb1deb2bf1e6a76644e07f58878682d3f282"
     },
     "config": {
       "filename": "config-5.44.0-1.h",
       "bytes": 170267,
-      "sha256": "0083e7b6bdc6407cd8168f7a3065b467d717f671cc2dd3fc3c365fe35f18bd17"
+      "sha256": "3e3176734974daa00ea2cd2c0dd0b05b798caf7d8d6daf3b4a8e1c7b4ba1f725"
     },
     "prefix": {
       "directory": "perl-wasi-prefix-5.44.0-1",
-      "files": 1304,
-      "bytes": 5561254,
-      "sha256": "6610dbee934f08633ee892e329e5fbbe6c98bf75e33b6c96be4cb418fd142f9d"
+      "files": 1082,
+      "bytes": 4655713,
+      "sha256": "6d486112dfcf4428659c89718f52118d0d29f61070d49cdaff33c8d6af2221af"
     }
   }
 }
