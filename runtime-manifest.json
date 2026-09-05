@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "distribution": "zeroperl-webdyne",
   "perlVersion": "5.44.0",
-  "buildNumber": 8,
+  "buildNumber": 1,
   "source": {
     "repository": "https://github.com/aspeer/zeroperl",
-    "revision": "c1c3182342f79090957aad73f6323de9519ba20d",
-    "dirty": true,
-    "zeroperlTsRevision": "c72bf6924b7c247bf276f0256e5c5f3f98af4262"
+    "revision": "e854b30bffd3be6bcf341207acdbc0f077326409",
+    "dirty": false,
+    "zeroperlTsRevision": "abaec75fad766e435ad6b8b4429ec2826347b207"
   },
   "profile": {
     "shrink": "off",
@@ -16,30 +16,30 @@
   },
   "artifacts": {
     "wasm": {
-      "filename": "zeroperl-webdyne-5.44.0-8.wasm",
-      "bytes": 14288201,
-      "sha256": "6605e16e373be2610d37c20da19204dabff5717a746c16afdaea26efa27abcd0"
+      "filename": "zeroperl-webdyne-5.44.0-1.wasm",
+      "bytes": 15309949,
+      "sha256": "61fa530b166f2a85dc3d85cea4f9b723cca46ffcc2441828d5af54ece5e71674"
     },
     "reactor": {
-      "filename": "zeroperl-webdyne-reactor-5.44.0-8.wasm",
-      "bytes": 12961212,
-      "sha256": "f6910471b8bb2304e649d82ee5f60641e383f25798d654cc0380601bb0daeb6d"
+      "filename": "zeroperl-webdyne-reactor-5.44.0-1.wasm",
+      "bytes": 13983052,
+      "sha256": "2cc041151ec8a2bb0f9a3a612255d17db26ebb52c0f93653f0d3bcae63926ed4"
     },
     "notices": {
-      "filename": "third-party-notices-5.44.0-8.tar.gz",
-      "bytes": 21705546,
-      "sha256": "844d32ff0c9e5234bf6d2c85ea1e951ace1de0f21bc216586d8e6c3df5ec4fcf"
+      "filename": "third-party-notices-5.44.0-1.tar.gz",
+      "bytes": 21705565,
+      "sha256": "317acd8ff8beeb6eb4cfc5c340fab9606347b63708b60ce9f13ee8e240fd0ddf"
     },
     "config": {
-      "filename": "config-5.44.0-8.h",
+      "filename": "config-5.44.0-1.h",
       "bytes": 170267,
-      "sha256": "357fb6e8682ef6e5cbead2d5c04000f3998b31f7ec19d7d26036f3740709c87c"
+      "sha256": "0083e7b6bdc6407cd8168f7a3065b467d717f671cc2dd3fc3c365fe35f18bd17"
     },
     "prefix": {
-      "directory": "perl-wasi-prefix-5.44.0-8",
-      "files": 1082,
-      "bytes": 4649660,
-      "sha256": "7dcffd156d8f543d64a57816255a3f389c0bb33086267afb3d7b484be32dbe23"
+      "directory": "perl-wasi-prefix-5.44.0-1",
+      "files": 1304,
+      "bytes": 5561254,
+      "sha256": "6610dbee934f08633ee892e329e5fbbe6c98bf75e33b6c96be4cb418fd142f9d"
     }
   }
 }

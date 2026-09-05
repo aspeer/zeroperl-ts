@@ -77,3 +77,15 @@ bridge commit may refresh bundled release artifacts without changing that
 implementation. This avoids a circular source-reference dependency between
 the runtime gitlink and the bridge's runtime manifest. npm publication remains
 disabled pending the user's approval.
+
+### Final local main artifacts
+
+The bundled runtime is now the clean Perl 5.44.0 build 1 from runtime commit
+`e854b30`; its manifest records `dirty: false` and the bridge implementation
+commit `abaec75`. Bridge sources are unchanged by this artifact refresh.
+The bundled candidate passed 160 Bun tests, 24 lifecycle checks and the 47-file
+npm package check (Node ESM/CJS and NodeNext declarations).
+
+Publication remains paused. Runtime integration acceptance found an unresolved
+SSE-completion-to-WebSocket-startup memory trap in a persistent local Worker.
+The runtime repository contains the reproducer and release-blocker details.

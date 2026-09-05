@@ -16,3 +16,6 @@ See RELEASE-REVIEW.md for evidence and the publication checklist.
 - Consolidate fd_open/path_open and complete the documented WASI limitations.
 - Run real browser, Worker, Deno and Windows installed-package acceptance.
 - CPAN distributions are locked by the runtime repository; full toolchain pinning remains optional.
+
+- [ ] Resolve the runtime repository's mixed SSE/WebSocket memory fault before
+  publishing this bundled runtime. See its release review and reproducer.
