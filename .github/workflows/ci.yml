@@ -39,6 +39,9 @@ jobs:
       - name: Verify callback ownership and asynchronous replacements
         run: npm run test:lifecycle
 
+      - name: Check Asyncify re-entry
+        run: npm run test:asyncify
+
       - name: Verify package contents
         run: npm run pack:check
 

@@ -17,8 +17,12 @@ See RELEASE-REVIEW.md for evidence and the publication checklist.
 - Run real browser, Worker, Deno and Windows installed-package acceptance.
 - CPAN distributions are locked by the runtime repository; full toolchain pinning remains optional.
 
-- [ ] Resolve the runtime repository's mixed SSE/WebSocket memory fault before
-  publishing this bundled runtime. See its release review and reproducer.
+- [x] Repair mixed SSE/WebSocket memory corruption with the three-phase
+  Asyncify stack restoration; qualify all supported Perl versions.
+- [x] Resolve the original overlapping-request Cloudflare context cancellation
+  with the runtime provider waitUntil correction; local Perl 5.44.0 checks pass.
+- [ ] Qualify forced WebSocket termination and hosted request lifetimes before
+  publication; the runtime repository tracks these remaining acceptance gates.
 
 - Host the manifest-matched WASM and notices artifacts from `aspeer/zeroperl`
   and configure the bridge repository's `ZEROPERL_ARTIFACT_BASE_URL` Actions

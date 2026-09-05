@@ -86,6 +86,11 @@ commit `abaec75`. Bridge sources are unchanged by this artifact refresh.
 The bundled candidate passed 160 Bun tests, 24 lifecycle checks and the 47-file
 npm package check (Node ESM/CJS and NodeNext declarations).
 
-Publication remains paused. Runtime integration acceptance found an unresolved
-SSE-completion-to-WebSocket-startup memory trap in a persistent local Worker.
-The runtime repository contains the reproducer and release-blocker details.
+The SSE-to-WebSocket memory trap is now repaired by the Asyncify re-entry
+correction described in DECISIONS.md. The new 100-round regression and all 24
+lifecycle checks pass on Perl 5.18.4, 5.36.3 and 5.44.0. Runtime bridge regeneration
+and its 17 JavaScript tests pass. This changes the bridge source, not the WASM.
+
+The runtime provider waitUntil correction passes local overlapping-request
+acceptance on Perl 5.44.0. Publication remains paused for forced WebSocket
+termination diagnostics and hosted acceptance, tracked in the runtime repository.

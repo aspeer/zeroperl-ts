@@ -42,11 +42,16 @@ operations do not promise tied/overloaded magic support; use eval/call for that.
 
 ## Keep suspended C frames intact through rewind
 
-Saving the C stack pointer only during the host promise is insufficient.
-Re-entering the export to rewind can set up C arguments before saved WASM
-locals are restored, overwriting an older Perl JMPENV near the root stack.
-Keep the pointer below suspended frames until the rewind call returns, then
-restore the root pointer. Rejected callbacks are part of the release matrix.
+Use the suspended C stack pointer during the host promise, the original root
+pointer when re-entering the export, and the suspended pointer again when the
+rewound host import stops rewind. Restore the root on export exit.
+
+Exported C wrappers must reuse the context address written by the resumed
+callback. Their stack setup does not restore the global stack pointer needed
+by the resumed C continuation. Omitting either restore causes invalid result
+handles or breaks rejected-callback recovery. This supersedes the earlier
+policy of retaining the suspended pointer throughout export re-entry.
+The regression covers all three supported Perl versions without C changes.
 
 ## Keep generated runtime artifacts outside Git
 

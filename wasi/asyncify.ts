@@ -100,6 +100,9 @@ class Asyncify {
 			if (this.getState() === State.Rewinding) {
 				if (!this.exports) throw new Error("Exports not initialized");
 				this.exports.asyncify_stop_rewind();
+				// Resume the C continuation at its original suspension depth.
+				const stack = this.exports.__stack_pointer;
+				if (stack && this.suspendedStackPointer !== undefined) stack.value = this.suspendedStackPointer;
 				return this.value;
 			}
 			this.assertNoneState();
@@ -160,15 +163,17 @@ class Asyncify {
 		while (this.getState() === State.Unwinding) {
 			if (!this.exports) throw new Error("Exports not initialized");
 			this.exports.asyncify_stop_unwind();
-			// Re-entering fn to rewind can write C arguments before its saved
-			// locals are restored. Keep that setup (and host allocations while
-			// awaiting) below the suspended frames until rewind has finished.
+			// Protect suspended C frames from host-side allocations while
+			// awaiting the asynchronous result.
 			const stack = this.exports.__stack_pointer;
 			const rootStackPointer = stack?.value;
 			if (stack && this.suspendedStackPointer !== undefined) stack.value = this.suspendedStackPointer;
 			try {
 				this.value = await (this.value as Promise<unknown>);
 				this.assertNoneState();
+				// Re-enter at the original stack address so exported C
+				// wrappers reuse the context written by the resumed callback.
+				if (stack && rootStackPointer !== undefined) stack.value = rootStackPointer;
 				this.exports.asyncify_start_rewind(DATA_ADDR);
 				result = fn(...args);
 			} finally {

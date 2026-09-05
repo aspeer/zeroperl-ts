@@ -42,3 +42,14 @@ See RELEASE-REVIEW.md and BACKLOG.md for remaining findings.
 - [x] Add checksum-verified runtime preparation for local development and CI.
 - [ ] Host matching artifacts and configure the CI artifact base URL.
 - [ ] Back up and rewrite binary history, only with separate approval.
+
+## Asyncify re-entry correction (2026-09-05)
+
+- [x] Restore root stack before export re-entry and suspended stack at import rewind.
+- [x] Qualify scalar/list results, repeated yields, host allocations and rejected
+  callbacks on Perl 5.18.4, 5.36.3 and 5.44.0; all 24 lifecycle checks also pass.
+- [x] Regenerate the runtime bridge from the corrected TypeScript source.
+- [x] The runtime provider now retains all completions with waitUntil; local
+  Perl 5.44 overlap acceptance passes.
+- [ ] Investigate forced WebSocket termination diagnostics and perform hosted
+  acceptance in the runtime repository. Publication is not approved.
