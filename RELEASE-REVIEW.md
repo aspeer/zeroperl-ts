@@ -9,10 +9,11 @@ rounds and the 47-file installed npm ESM/CJS/NodeNext package check pass.
 
 The runtime also enables Cloudflare `enable_request_signal` so canceling a
 long-lived SSE response releases its session instead of blocking the persistent
-interpreter. Custom Wrangler configurations must enable the same flag. Earlier
-3.026 hosted stream tests passed; repeating hosted acceptance with the final
-rebuilt binary was blocked by automatic upload approval review. See the runtime
-repository's final qualification record for the exact local/hosted distinction.
+interpreter. Custom Wrangler configurations must enable the same flag. The subsequently
+approved hosted replay with the exact final binary passes sustained stream
+lifetimes, 100 overlap rounds, 20 forced disconnects and another 20 recovery
+rounds. See the runtime repository's RELEASE-QUALIFICATION.md for evidence
+and limits; hosted storage was not exercised.
 The maintainer accepts the independently reproduced abrupt-WebSocket-disconnect
 warning when subsequent clients remain healthy.
 

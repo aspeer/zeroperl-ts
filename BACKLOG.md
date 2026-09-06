@@ -23,7 +23,8 @@ See RELEASE-REVIEW.md for evidence and the publication checklist.
   with the runtime provider waitUntil correction; local Perl 5.44.0 checks pass.
 - [x] Isolate forced WebSocket termination and qualify earlier 3.026 hosted
   stream lifetimes; the maintainer accepts the independent upstream warning.
-- [ ] Repeat hosted checks with the final rebuilt package after upload approval.
+- [x] Repeat hosted checks with the final rebuilt package after upload approval;
+  lifetime, overlap and disconnect recovery pass.
 
 - Host the manifest-matched WASM and notices artifacts from `aspeer/zeroperl`
   and configure the bridge repository's `ZEROPERL_ARTIFACT_BASE_URL` Actions

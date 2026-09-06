@@ -53,8 +53,8 @@ See RELEASE-REVIEW.md and BACKLOG.md for remaining findings.
   Perl 5.44 overlap acceptance passes.
 - [x] Isolate forced WebSocket termination diagnostics; the maintainer accepts
   the upstream warning. Earlier hosted 3.026 stream acceptance passes.
-- [ ] Repeat hosted acceptance with the final rebuilt artifact when its upload
-  is approved; local final-package validation is recorded in the runtime repo.
+- [x] Repeat hosted acceptance with the final rebuilt artifact after upload
+  approval; lifetime, overlap and disconnect recovery pass.
 
 ## WebDyne 3.026 release preparation
 
