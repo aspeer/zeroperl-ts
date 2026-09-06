@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, writeFile, readFile, copyFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,8 +8,12 @@ import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("../", import.meta.url));
 const temporary = await mkdtemp(join(tmpdir(), "zeroperl npm space # "));
 try {
-  const [packed] = JSON.parse(execFileSync("npm", ["pack", "--ignore-scripts", "--json",
+  const [packed] = process.env.ZEROPERL_PACK_JSON ? JSON.parse(await readFile(resolve(root, process.env.ZEROPERL_PACK_JSON), "utf8")) : JSON.parse(execFileSync("npm", ["pack", "--ignore-scripts", "--json",
     "--cache", join(temporary, "cache"), "--pack-destination", temporary], {cwd: root, encoding: "utf8"}));
+  if (process.env.ZEROPERL_PACK_JSON) {
+    const source = resolve(root, process.env.ZEROPERL_PACK_JSON, '..', packed.filename);
+    await copyFile(source, join(temporary, packed.filename));
+  }
   const files = new Set(packed.files.map(({path}) => path));
   for (const file of ["LICENSE", "NOTICE", "README.md", "USAGE.md", "WEBDYNE.md", "dist/esm/index.js", "dist/cjs/index.cjs",
     "dist/cjs/package.json", "dist/esm/types/index.d.ts", "dist/cjs/types/index.d.ts",

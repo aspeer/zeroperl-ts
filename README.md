@@ -1,5 +1,7 @@
 # ZeroPerl TypeScript bridge — WebDyne integration fork
 
+For maintainers: [release tagging and npm staging](RELEASING.md).
+
 ## Working from source
 
 This repository tracks the TypeScript bridge, tests, licenses and runtime

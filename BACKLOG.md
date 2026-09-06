@@ -1,5 +1,9 @@
 # Release backlog
 
+Current release procedure: [RELEASING.md](RELEASING.md). Project tag staging
+is implemented; verify external package bootstrap/OIDC setup and the first
+tagged GitHub run. Direct publication still requires maintainer approval.
+
 The callback ownership, replacement, older-Perl cleanup and Asyncify rewind
 blockers are repaired. All three supported build 8 runtimes are qualified.
 See RELEASE-REVIEW.md for evidence and the publication checklist.

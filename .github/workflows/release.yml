@@ -1,0 +1,86 @@
+name: Build, qualify and stage npm release
+on:
+  push:
+    tags:
+      - 'aspeer-zeroperl-ts_*'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: npm-stage-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+      - name: Validate paired annotated release tags
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+        run: |
+          test "$REF_TYPE" = tag
+          node tools/release.mjs validate
+          git merge-base --is-ancestor HEAD origin/main
+      - name: Install staging-capable npm
+        run: npm install --global npm@11.19.1
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.0'
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare matching runtime artifacts
+        env:
+          ZEROPERL_ARTIFACT_BASE_URL: ${{ vars.ZEROPERL_ARTIFACT_BASE_URL }}
+        run: npm run runtime:prepare
+
+      - name: Test bridge
+        run: bun test --timeout 30000
+
+      - name: Build distributions
+        run: npm run build
+
+      - name: Verify callback ownership and asynchronous replacements
+        run: npm run test:lifecycle
+
+      - name: Check Asyncify re-entry
+        run: npm run test:asyncify
+
+      - name: Pack the release once
+        run: |
+          mkdir -p release-output
+          npm pack --ignore-scripts --pack-destination release-output --json > release-output/pack.json
+      - name: Verify the exact release package
+        env:
+          ZEROPERL_PACK_JSON: release-output/pack.json
+        run: npm run pack:check
+
+      - name: Verify tracked sources are unchanged
+        run: git diff --exit-code
+      - name: Preserve verified npm candidate
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: npm-${{ github.ref_name }}
+          path: release-output/
+          retention-days: 90
+          if-no-files-found: error
+      - name: Attest npm candidate
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        with:
+          subject-path: release-output/*.tgz
+      - name: Stage the verified candidate
+        run: |
+          tarball="$(node -p "require('./release-output/pack.json')[0].filename")"
+          node tools/stage-package.mjs "release-output/$tarball" release-output/pack.json

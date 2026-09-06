@@ -36,3 +36,5 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # Runtime build artifacts; restore with npm run runtime:prepare
 /zeroperl.wasm
 /third-party-notices.tar.gz
+
+/release-output/
