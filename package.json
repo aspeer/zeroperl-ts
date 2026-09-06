@@ -1,6 +1,6 @@
 {
   "name": "@aspeer/zeroperl-ts",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Perl 5 interpreter powered by WebAssembly for JavaScript runtimes",
   "scripts": {
     "test:lifecycle": "node tools/check-runtime-lifecycle.mjs",
