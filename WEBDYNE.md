@@ -18,7 +18,7 @@ The consolidation includes precompiled `WebAssembly.Module` loading, WASI
 filesystem/path handling, synchronous and asynchronous callback dispatch, and
 safe ownership/disposal across asynchronous destructors. These facilities
 support WebDyne's request runtime while remaining available to other Perl
-embedders. See [DECISIONS.md](DECISIONS.md), [CHANGES.md](CHANGES.md), and the
+embedders. See [ARCHITECTURE.md](ARCHITECTURE.md), [CHANGES.md](CHANGES.md), and the
 compatibility notes in [USAGE.md](USAGE.md#compatibility-notes).
 
 ## Cloudflare WASM loading

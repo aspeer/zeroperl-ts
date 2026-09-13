@@ -1,6 +1,7 @@
 # ZeroPerl TypeScript bridge — WebDyne integration fork
 
-For maintainers: [release tagging and npm staging](RELEASING.md).
+For maintainers: [architecture](ARCHITECTURE.md), [verification](TESTS.md), and
+[release tagging and npm staging](RELEASING.md).
 
 ## Working from source
 

@@ -9,9 +9,9 @@ make release
 
 The helper fetches GitHub tags, checks main, increments the patch version,
 updates package.json and package-lock.json, commits them, and creates matching
-annotated `aspeer-zeroperl-ts_1.1.1` and `v1.1.1` tags (from the current 1.1.0
-baseline). It prints an atomic push command for main and those two tags. It
-never pushes or stages anything itself. To choose an explicit newer version:
+annotated project-prefixed and `v` tags for the selected version. It prints an
+atomic push command for main and those two tags. It never pushes or stages
+anything itself. To choose an explicit newer version:
 
 ```sh
 RELEASE_VERSION=1.2.0 make release
