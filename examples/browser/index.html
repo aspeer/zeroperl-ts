@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZeroPerl browser example</title>
+<style>
+body { max-width: 52rem; margin: 3rem auto; padding: 0 1rem; font: 17px system-ui; }
+textarea { box-sizing: border-box; width: 100%; min-height: 12rem; font: 15px monospace; }
+button { margin: 1rem 0; padding: .6rem 1.2rem; }
+pre { padding: 1rem; background: #f1f3f5; white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>
+<h1>Run Perl in your browser</h1>
+<p>Each run creates a fresh interpreter. Try changing the greeting or adding a Perl error.</p>
+<label for="code">Perl source</label>
+<textarea id="code" spellcheck="false">use strict;
+use warnings;
+print("Hello from your browser!\n");</textarea>
+<button id="run" type="button">Run Perl</button>
+<p id="status" role="status">Ready</p>
+<pre id="output" aria-label="Perl output"></pre>
+<script type="importmap">{"imports":{"@aspeer/zeroperl-ts":"/bridge.js"}}</script>
+<script type="module" src="/main.js"></script>
+</html>

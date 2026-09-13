@@ -1,0 +1,6 @@
+{
+    "extends": "../tsconfig.json",
+    "compilerOptions": { "rootDir": "..", "noEmit": true, "emitDeclarationOnly": false },
+    "include": ["*/main.ts", "browser/serve.ts"],
+    "exclude": []
+}

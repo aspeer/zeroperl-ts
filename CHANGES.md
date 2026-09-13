@@ -1,5 +1,14 @@
 # Changes
 
+## 1.1.3
+
+- Added seven runnable bridge examples with shared setup and individual run/demo
+  instructions: basic evaluation, data exchange, virtual files, asynchronous
+  host functions, browser usage, lifecycle management and a local Worker.
+- Verified command-line output, TypeScript checking, browser error recovery and
+  local Worker responses; documented the pinned runtime's END limitation.
+- Runtime code and the pinned WASM artifact are unchanged.
+
 ## 1.1.2
 
 - Consolidated architecture and verification documentation; removed obsolete

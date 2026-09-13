@@ -1,0 +1,8 @@
+{
+    "name": "zeroperl-bridge-example",
+    "main": "worker.js",
+    "compatibility_date": "2026-09-13",
+    "compatibility_flags": ["nodejs_compat"],
+    "rules": [{ "type": "CompiledWasm", "globs": ["**/*.wasm"], "fallthrough": true }],
+    "observability": { "enabled": true, "traces": { "enabled": true } }
+}

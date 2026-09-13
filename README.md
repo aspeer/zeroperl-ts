@@ -3,6 +3,9 @@
 For maintainers: [architecture](ARCHITECTURE.md), [verification](TESTS.md), and
 [release tagging and npm staging](RELEASING.md).
 
+Runnable, maintained examples are in [examples/](examples/README.md), including
+data exchange, asynchronous callbacks, browser usage and a local Worker.
+
 ## Working from source
 
 This repository tracks the TypeScript bridge, tests, licenses and runtime
