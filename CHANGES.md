@@ -1,5 +1,12 @@
 # Changes
 
+## 1.1.4
+
+- Renamed the public npm package to `@webdyne/webdyne-zeroperl-ts` and updated
+  consumer imports, examples, package verification and documentation.
+- Initial publication under the WebDyne scope; the bridge API and pinned runtime
+  remain unchanged.
+
 ## 1.1.3
 
 - Added seven runnable bridge examples with shared setup and individual run/demo

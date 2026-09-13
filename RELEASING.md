@@ -1,6 +1,8 @@
 # Preparing a TypeScript bridge release
 
-The standalone bridge uses package.json as its version source and has its own
+The standalone bridge is published as `@webdyne/webdyne-zeroperl-ts`.
+The GitHub repository and `aspeer-zeroperl-ts_` tag prefix remain unchanged.
+It uses package.json as its version source and has its own
 release sequence, independent of the WebDyne runtime packages. On clean main:
 
 ```sh
@@ -20,8 +22,8 @@ RELEASE_VERSION=1.2.0 make release
 `.github/workflows/release.yml` builds distributions once, tests the bridge,
 checks lifecycle and Asyncify behavior, packs once, validates installed ESM/CJS
 and NodeNext consumers from that exact archive, and stages it. Configure npm
-Trusted Publishing for **release.yml** in **aspeer/zeroperl-ts**, stage-only,
-with no GitHub environment. The ordinary CI workflow does not stage packages.
+Trusted Publishing on `@webdyne/webdyne-zeroperl-ts` for **release.yml** in
+**aspeer/zeroperl-ts**, stage-only, with no GitHub environment. The ordinary CI workflow does not stage packages.
 
 Before releasing, update runtime-manifest.json to the intended qualified
 runtime and configure ZEROPERL_ARTIFACT_BASE_URL in GitHub Actions variables.

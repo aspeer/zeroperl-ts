@@ -1,5 +1,5 @@
-import { ZeroPerl } from '@aspeer/zeroperl-ts';
-import wasmModule from '@aspeer/zeroperl-ts/zeroperl.wasm';
+import { ZeroPerl } from '@webdyne/webdyne-zeroperl-ts';
+import wasmModule from '@webdyne/webdyne-zeroperl-ts/zeroperl.wasm';
 
 export default {
     async fetch(request) {

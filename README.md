@@ -49,7 +49,7 @@ potential to support other WASM providers later. The bridge also remains
 usable by applications embedding Perl directly.
 
 **WebDyne-specific guidance is in [WEBDYNE.md](WEBDYNE.md).** Current generic
-installation and API instructions for `@aspeer/zeroperl-ts` are in
+installation and API instructions for `@webdyne/webdyne-zeroperl-ts` are in
 [USAGE.md](USAGE.md). This package is available from npm and maintained on
 the main branch. See [LICENSE](LICENSE) and [NOTICE](NOTICE) for licensing
 and attribution.

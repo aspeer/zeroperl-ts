@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { MemoryFileSystem, ZeroPerl } from '@aspeer/zeroperl-ts';
+import { MemoryFileSystem, ZeroPerl } from '@webdyne/webdyne-zeroperl-ts';
 
 const fs = new MemoryFileSystem({ '/': '' });
 fs.addFile('/report.pl', await readFile(new URL('./report.pl', import.meta.url), 'utf8'));

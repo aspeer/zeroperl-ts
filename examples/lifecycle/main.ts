@@ -1,4 +1,4 @@
-import { ZeroPerl } from '@aspeer/zeroperl-ts';
+import { ZeroPerl } from '@webdyne/webdyne-zeroperl-ts';
 
 const perl = await ZeroPerl.create();
 function registerRelease() {

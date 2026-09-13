@@ -1,4 +1,4 @@
-import { ZeroPerl } from '@aspeer/zeroperl-ts';
+import { ZeroPerl } from '@webdyne/webdyne-zeroperl-ts';
 
 const button = document.querySelector('#run');
 const code = document.querySelector('#code');

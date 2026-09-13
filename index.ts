@@ -25,7 +25,7 @@ export { MemoryFileSystem } from "./wasi/features/fd.js";
  * @example
  * Basic usage:
  * ```typescript
- * import { ZeroPerl } from "@aspeer/zeroperl-ts";
+ * import { ZeroPerl } from "@webdyne/webdyne-zeroperl-ts";
  *
  * const perl = await ZeroPerl.create();
  * await perl.eval('print "Hello, World!\n"');

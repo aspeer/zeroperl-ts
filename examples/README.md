@@ -1,6 +1,6 @@
 # Runnable bridge examples
 
-These examples use the public `@aspeer/zeroperl-ts` API against this checkout's
+These examples use the public `@webdyne/webdyne-zeroperl-ts` API against this checkout's
 built package. Start with Hello Perl, then choose the capability you need.
 
 | Example | Demonstrates |

@@ -27,7 +27,7 @@ Cloudflare Workers may pass their module-rule import without a loader shim:
 
 ```typescript
 import zeroperlModule from './zeroperl.wasm';
-import { ZeroPerl } from '@aspeer/zeroperl-ts';
+import { ZeroPerl } from '@webdyne/webdyne-zeroperl-ts';
 
 const perl = await ZeroPerl.create({ wasmModule: zeroperlModule });
 ```

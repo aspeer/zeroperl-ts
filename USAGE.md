@@ -1,4 +1,4 @@
-# Using @aspeer/zeroperl-ts
+# Using @webdyne/webdyne-zeroperl-ts
 
 Current installation, API and compatibility guidance for this fork. For upstream
 credits see [README.md](README.md); for WebDyne and Cloudflare integration see
@@ -21,7 +21,7 @@ credits see [README.md](README.md); for WebDyne and Cloudflare integration see
 Install from npm:
 
 ```sh
-npm install @aspeer/zeroperl-ts@1.1.0
+npm install @webdyne/webdyne-zeroperl-ts
 ```
 
 No Perl installation or build tools are needed to consume the npm package.
@@ -33,7 +33,7 @@ the normal runtime. Each selected binary must be qualified against this bridge.
 ## Quick Start
 
 ```typescript
-import { ZeroPerl } from '@aspeer/zeroperl-ts';
+import { ZeroPerl } from '@webdyne/webdyne-zeroperl-ts';
 
 const perl = await ZeroPerl.create({ stdout: data => console.log(data) });
 await perl.eval('print "Hello, World!\\n"');
@@ -64,7 +64,7 @@ await perl.eval(`
 ### Evaluating Perl Code
 
 ```typescript
-import { ZeroPerl } from '@aspeer/zeroperl-ts';
+import { ZeroPerl } from '@webdyne/webdyne-zeroperl-ts';
 
 const perl = await ZeroPerl.create();
 
@@ -183,7 +183,7 @@ await perl.dispose();
 ### Creating a Virtual Filesystem
 
 ```typescript
-import { ZeroPerl, MemoryFileSystem } from '@aspeer/zeroperl-ts';
+import { ZeroPerl, MemoryFileSystem } from '@webdyne/webdyne-zeroperl-ts';
 
 const fs = new MemoryFileSystem({ "/": "" });
 
@@ -408,8 +408,8 @@ await perl.dispose();
 **With bundler (recommended):**
 
 ```typescript
-import { ZeroPerl } from '@aspeer/zeroperl-ts';
-import zeroperl from '@aspeer/zeroperl-ts/zeroperl.wasm';
+import { ZeroPerl } from '@webdyne/webdyne-zeroperl-ts';
+import zeroperl from '@webdyne/webdyne-zeroperl-ts/zeroperl.wasm';
 
 const perl = await ZeroPerl.create({
   fetch: () => fetch(zeroperl),
@@ -649,7 +649,7 @@ await perl.shutdown();
 ### Processing JSON
 
 ```typescript
-import { ZeroPerl, MemoryFileSystem } from '@aspeer/zeroperl-ts';
+import { ZeroPerl, MemoryFileSystem } from '@webdyne/webdyne-zeroperl-ts';
 
 const fs = new MemoryFileSystem({ "/": "" });
 fs.addFile("/data.json", JSON.stringify({ users: ['Alice', 'Bob'] }));

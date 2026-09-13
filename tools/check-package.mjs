@@ -20,11 +20,11 @@ try {
     "dist/esm/zeroperl.wasm", "dist/cjs/zeroperl.wasm", "dist/runtime-manifest.json",
     "dist/third-party-notices.tar.gz", "dist/licenses/zeroperl-LICENSE"]) assert.ok(files.has(file), `Missing ${file}`);
   assert.ok([...files].every(path => path.startsWith("dist/") || ["LICENSE", "NOTICE", "README.md", "USAGE.md", "WEBDYNE.md", "package.json"].includes(path)));
-  const modules = join(temporary, "node_modules/@aspeer");
+  const modules = join(temporary, "node_modules/@webdyne");
   await mkdir(modules, {recursive: true});
   execFileSync("tar", ["-xzf", join(temporary, packed.filename), "-C", modules]);
   const {rename} = await import("node:fs/promises");
-  await rename(join(modules, "package"), join(modules, "zeroperl-ts"));
+  await rename(join(modules, "package"), join(modules, "webdyne-zeroperl-ts"));
   const body = `
 const perl = await ZeroPerl.create();
 try {
@@ -40,11 +40,11 @@ try {
 } finally { await perl.dispose(); }
 `;
 
-  await writeFile(join(temporary, "smoke.mjs"), `import { ZeroPerl } from '@aspeer/zeroperl-ts';\n${body}`);
-  await writeFile(join(temporary, "smoke.cjs"), `const { ZeroPerl } = require('@aspeer/zeroperl-ts');\n(async () => {${body}})().catch(error => {console.error(error); process.exitCode=1});`);
+  await writeFile(join(temporary, "smoke.mjs"), `import { ZeroPerl } from '@webdyne/webdyne-zeroperl-ts';\n${body}`);
+  await writeFile(join(temporary, "smoke.cjs"), `const { ZeroPerl } = require('@webdyne/webdyne-zeroperl-ts');\n(async () => {${body}})().catch(error => {console.error(error); process.exitCode=1});`);
   for (const file of ["smoke.mjs", "smoke.cjs"]) execFileSync(process.execPath, [join(temporary, file)], {stdio: "pipe"});
   for (const extension of ["mts", "cts"]) {
-    await writeFile(join(temporary, `types.${extension}`), `import { ZeroPerl } from '@aspeer/zeroperl-ts';\nvoid ZeroPerl.create();`);
+    await writeFile(join(temporary, `types.${extension}`), `import { ZeroPerl } from '@webdyne/webdyne-zeroperl-ts';\nvoid ZeroPerl.create();`);
     execFileSync(process.execPath, [resolve(root, "node_modules/typescript/bin/tsc"), "--noEmit",
       "--strict", "--skipLibCheck", "false", "--module", "NodeNext", "--target", "ES2022",
       join(temporary, `types.${extension}`)], {encoding: "utf8"});

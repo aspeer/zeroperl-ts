@@ -1,4 +1,4 @@
-import { ZeroPerl } from '@aspeer/zeroperl-ts';
+import { ZeroPerl } from '@webdyne/webdyne-zeroperl-ts';
 
 const users = new Map([['alice', 'Alice Example']]);
 const perl = await ZeroPerl.create({ stdout: data => process.stdout.write(data) });
