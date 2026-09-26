@@ -1,5 +1,24 @@
 # ZeroPerl TypeScript bridge — WebDyne integration fork
 
+## GitHub Attestations
+
+The release workflow generates [GitHub artifact attestations](https://docs.github.com/en/actions/concepts/security/artifact-attestations)
+for npm package archives. Install the [GitHub CLI](https://cli.github.com/)
+with `gh attestation` support and authenticate with `gh auth login`.
+
+Download the npm package with `npm pack`, replace `VERSION`, and verify the
+resulting archive with:
+
+```sh
+npm pack @webdyne/webdyne-zeroperl-ts@VERSION
+gh attestation verify webdyne-webdyne-zeroperl-ts-VERSION.tgz --repo aspeer/zeroperl-ts
+```
+
+A successful verification confirms that the archive's checksum matches an
+attestation from this repository. Attestations cover archives produced by the
+attestation-enabled release workflow. Older releases and GitHub's automatically
+generated source-code archives are not covered.
+
 For maintainers: [architecture](ARCHITECTURE.md), [verification](TESTS.md), and
 [release tagging and npm staging](RELEASING.md).
 
